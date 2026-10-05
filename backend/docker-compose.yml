@@ -1,0 +1,17 @@
+version: "1"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: pbl-sk-polibatam-postgres
+    ports:
+      - "54324:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db-pbl-sk-polibatam
+    volumes:
+      - data_postgres:/var/lib/postgresql/data
+
+volumes:
+  data_postgres:

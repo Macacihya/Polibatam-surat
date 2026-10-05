@@ -1,0 +1,6 @@
+**
+!.gitignore
+!index.html
+# everything in this directory (and all subdirectories)
+!templates
+!templates/*

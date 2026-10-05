@@ -1,0 +1,258 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model tbm_regulation {
+  id String @id @default(cuid())
+
+  filepath String?
+  title    String?
+
+  creator_id String?
+  creator    tbm_user? @relation("tbm_regulation_creator", fields: [creator_id], references: [id])
+
+  modifier_id String?
+  modifier    tbm_user? @relation("tbm_regulation_modifier", fields: [modifier_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  is_deleted Boolean  @default(false)
+}
+
+model tbm_user {
+  id                    String  @id @default(cuid())
+  nip                   String  @unique
+  nama                  String
+  gelar_dpn             String?
+  gelar_blk             String?
+  agama                 String?
+  email                 String?
+  sex                   String?
+  nomor_status_karyawan String?
+  status_karyawan       String?
+  nomor_status_kontrak  String?
+  status_kontrak        String?
+  nomor_staff           String?
+  staff                 String?
+  nomor_unit            String?
+  unit                  String?
+  line_number           String?
+  is_admin              Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean  @default(false)
+
+  groups      tbm_group_user[]
+  documents   tbl_document_user[]
+  submissions tbl_submission_user[]
+
+  groups_creator tbm_group[]
+
+  regulation_creator  tbm_regulation[] @relation("tbm_regulation_creator")
+  regulation_modifier tbm_regulation[] @relation("tbm_regulation_modifier")
+
+  document_creator  tbl_document[] @relation("tbl_document_creator")
+  document_modifier tbl_document[] @relation("tbl_document_modifier")
+
+  submission_creator     tbl_submission[]     @relation("tbl_submission_creator")
+  submission_modifier    tbl_submission[]     @relation("tbl_submission_modifier")
+  submission_log_creator tbl_submission_log[] @relation("tbl_submission_log_creator")
+  units                  tbm_unit[]
+}
+
+model tbm_unit {
+  id String @id @default(cuid())
+
+  name String @unique
+
+  leader_id String?
+  leader    tbm_user? @relation(fields: [leader_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  is_deleted Boolean  @default(false)
+
+  units       tbm_group_unit[]
+  documents   tbl_document_unit[]
+  submissions tbl_submission_unit[]
+}
+
+model tbm_group {
+  id   String  @id @default(cuid())
+  name String
+  note String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  is_deleted Boolean  @default(false)
+
+  creator_id String?
+  creator    tbm_user? @relation(fields: [creator_id], references: [id])
+
+  users             tbm_group_user[]
+  document_groups   tbl_document_group[]
+  submission_groups tbl_submission_group[]
+  units             tbm_group_unit[]
+}
+
+model tbm_group_user {
+  id       String    @id @default(cuid())
+  user_id  String
+  group_id String
+  user     tbm_user  @relation(fields: [user_id], references: [id])
+  group    tbm_group @relation(fields: [group_id], references: [id])
+}
+
+model tbm_group_unit {
+  id        String    @id @default(cuid())
+  unit_name String
+  group_id  String
+  unit      tbm_unit  @relation(fields: [unit_name], references: [name])
+  group     tbm_group @relation(fields: [group_id], references: [id])
+}
+
+enum DocumentType {
+  SURAT_TUGAS
+  SURAT_KEPUTUSAN
+}
+
+model tbl_document {
+  id       String       @id @default(cuid())
+  type     DocumentType @default(SURAT_KEPUTUSAN)
+  date     DateTime?    @default(now())
+  filepath String?
+  code     String?
+  name     String?
+  remarks  String?      @default("")
+
+  creator_id String?
+  creator    tbm_user? @relation("tbl_document_creator", fields: [creator_id], references: [id])
+
+  modifier_id String?
+  modifier    tbm_user? @relation("tbl_document_modifier", fields: [modifier_id], references: [id])
+
+  submission_id String?
+  submission    tbl_submission? @relation(fields: [submission_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  is_deleted Boolean  @default(false)
+
+  groups tbl_document_group[]
+  users  tbl_document_user[]
+  units  tbl_document_unit[]
+}
+
+model tbl_document_group {
+  id          String       @id @default(cuid())
+  document_id String
+  group_id    String
+  document    tbl_document @relation(fields: [document_id], references: [id])
+  group       tbm_group?   @relation(fields: [group_id], references: [id])
+}
+
+model tbl_document_user {
+  id          String       @id @default(cuid())
+  document_id String
+  user_id     String
+  document    tbl_document @relation(fields: [document_id], references: [id])
+  user        tbm_user     @relation(fields: [user_id], references: [id])
+}
+
+model tbl_document_unit {
+  id          String       @id @default(cuid())
+  document_id String
+  unit_name   String
+  document    tbl_document @relation(fields: [document_id], references: [id])
+  unit        tbm_unit     @relation(fields: [unit_name], references: [name])
+}
+
+model tbl_submission {
+  id String @id @default(cuid())
+  no Int    @default(autoincrement())
+
+  title       String    @default("")
+  type        String    @default("")
+  filepath    String?   @default("")
+  pickup_plan DateTime? @db.Date
+
+  list_consider Json?
+  list_observe  Json?
+  list_decide   Json?
+
+  status     String    @default("POSTED")
+  remarks    String    @default("")
+  date_issue DateTime?
+
+  is_attachment       Boolean @default(false)
+  filepath_attachment String? @default("")
+
+  creator_id String?
+  creator    tbm_user? @relation("tbl_submission_creator", fields: [creator_id], references: [id])
+
+  modifier_id String?
+  modifier    tbm_user? @relation("tbl_submission_modifier", fields: [modifier_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  is_deleted Boolean  @default(false)
+
+  groups    tbl_submission_group[]
+  users     tbl_submission_user[]
+  units     tbl_submission_unit[]
+  documents tbl_document[]
+  logs      tbl_submission_log[]
+}
+
+model tbl_submission_log {
+  id     String @id @default(cuid())
+  status String
+
+  remarks        String?
+  reject_remarks String?
+
+  creator_id String?
+  creator    tbm_user? @relation("tbl_submission_log_creator", fields: [creator_id], references: [id])
+
+  submission_id String?
+  submission    tbl_submission? @relation(fields: [submission_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model tbl_submission_group {
+  id            String         @id @default(cuid())
+  submission_id String
+  group_id      String
+  submission    tbl_submission @relation(fields: [submission_id], references: [id])
+  group         tbm_group      @relation(fields: [group_id], references: [id])
+}
+
+model tbl_submission_user {
+  id            String         @id @default(cuid())
+  submission_id String
+  user_id       String
+  submission    tbl_submission @relation(fields: [submission_id], references: [id])
+  user          tbm_user       @relation(fields: [user_id], references: [id])
+}
+
+model tbl_submission_unit {
+  id            String         @id @default(cuid())
+  submission_id String
+  unit_name     String
+  submission    tbl_submission @relation(fields: [submission_id], references: [id])
+  unit          tbm_unit       @relation(fields: [unit_name], references: [name])
+}

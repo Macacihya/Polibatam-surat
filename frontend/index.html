@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Aplikasi Pengajuan dan Distribusi SK | Politeknik Negeri Batam
+    </title>
+    <link rel="stylesheet" type="text/css" href="/loader.css" />
+  </head>
+
+  <body>
+    <div id="app">
+      <div id="loading-bg">
+        <div class="loading-logo">
+          <!-- SVG Logo -->
+          <img src="/logo.svg" width="120" alt="Logo" />
+        </div>
+        <h3
+          style="
+            font-family: sans-serif;
+            font-weight: 500;
+            font-size: 1rem;
+            letter-spacing: 0.3rem;
+            color: #183a64;
+          "
+        >
+          POLITEKNIK NEGERI BATAM
+        </h3>
+        <div class="loading">
+          <div class="effect-1 effects"></div>
+          <div class="effect-2 effects"></div>
+          <div class="effect-3 effects"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      const loaderColor =
+        localStorage.getItem("vuexy-initial-loader-bg") || "#FFFFFF";
+      const primaryColor =
+        localStorage.getItem("vuexy-initial-loader-color") || "#183a64";
+
+      if (loaderColor)
+        document.documentElement.style.setProperty(
+          "--initial-loader-bg",
+          loaderColor
+        );
+
+      if (primaryColor)
+        document.documentElement.style.setProperty(
+          "--initial-loader-color",
+          primaryColor
+        );
+    </script>
+  </body>
+</html>
