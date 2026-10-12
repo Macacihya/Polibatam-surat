@@ -6,10 +6,6 @@ export const isAdmin = () => {
   return user.is_admin
 }
 
-export const formatDate = date => {
-  return date ? moment(date).format("DD/MM/YYYY") : '-'
-}
-
 export const formatCalendar = date => {
   return date ? moment(date).calendar() : '-'
 }
