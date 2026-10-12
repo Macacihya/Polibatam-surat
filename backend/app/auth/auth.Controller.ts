@@ -10,11 +10,68 @@ import { Request, Response } from "express";
 import UserRepository from "../user/user.Repository";
 import { PolibatamAct } from "../../lib/polibatam";
 import { LoginSchema } from "./auth.Schema";
+import prisma from "../../lib/prisma";
 
 class AuthController {
   async Login(req: Request, res: Response) {
     try {
       const data: LoginSchema = req.body;
+
+      // Mode Dummy untuk Pengujian & Pengembangan Lokal
+      const dummyAccounts: Record<string, { nip: string; nama: string; email: string; is_admin: boolean; unit: string; staff: string; status_karyawan: string }> = {
+        admin: {
+          nip: "admin",
+          nama: "Super Administrator (Dummy)",
+          email: "admin@polibatam.ac.id",
+          is_admin: true,
+          unit: "Pusat Informasi & Komputer (P3M)",
+          staff: "Tenaga Kependidikan",
+          status_karyawan: "PNS",
+        },
+        dosen: {
+          nip: "dosen",
+          nama: "Dr. Budi Santoso, M.Kom (Dummy)",
+          email: "dosen@polibatam.ac.id",
+          is_admin: false,
+          unit: "Jurusan Teknik Informatika",
+          staff: "Tenaga Pendidik",
+          status_karyawan: "Dosen Tetap",
+        },
+        staff: {
+          nip: "staff",
+          nama: "Siti Rahmawati, S.Tr.Kom (Dummy)",
+          email: "staff@polibatam.ac.id",
+          is_admin: false,
+          unit: "Bagian Umum & Keuangan",
+          staff: "Tenaga Kependidikan",
+          status_karyawan: "Pegawai Tetap",
+        },
+      };
+
+      const lowerUsername = (data.username || "").trim().toLowerCase();
+      if (dummyAccounts[lowerUsername]) {
+        const dummy = dummyAccounts[lowerUsername];
+        const user = await prisma.tbm_user.upsert({
+          where: { nip: dummy.nip },
+          update: dummy,
+          create: {
+            id: dummy.nip,
+            ...dummy,
+          },
+        });
+
+        const payload = {
+          user: {
+            ...user,
+          },
+          token: EncryptToken({
+            secretkey: "dummy-secretkey",
+            user: user,
+          }),
+        };
+
+        return await Ok({ res, data: payload, message: "Login success (Dummy Mode)" });
+      }
 
       const loginResponse: PolibatamResponseLogin = await polibatamInstance({
         method: "POST",
