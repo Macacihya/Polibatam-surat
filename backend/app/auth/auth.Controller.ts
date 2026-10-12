@@ -16,8 +16,6 @@ class AuthController {
     try {
       const data: LoginSchema = req.body;
 
-      console.log("req.body", req.body);
-
       const loginResponse: PolibatamResponseLogin = await polibatamInstance({
         method: "POST",
         data: {
@@ -27,14 +25,19 @@ class AuthController {
         },
       });
 
-      console.log("loginResponse", loginResponse);
+      // Validasi jika API mengembalikan respons non-JSON atau diblokir intranet
+      if (!loginResponse || typeof loginResponse !== "object") {
+        throw new Error("Layanan autentikasi Polibatam tidak dapat dijangkau dari luar jaringan kampus.");
+      }
 
-      if (
-        loginResponse.error_code == 102 ||
-        loginResponse.error_code == 103 ||
-        loginResponse.error_code == 104
-      )
-        throw new Error(loginResponse.error_desc);
+      // Validasi kegagalan login dari API Polibatam
+      if (loginResponse.error_code && loginResponse.error_code !== 0) {
+        throw new Error(loginResponse.error_desc || "Username atau password salah.");
+      }
+
+      if (!loginResponse.data?.secretkey) {
+        throw new Error("Gagal memperoleh secretkey dari API Polibatam.");
+      }
 
       const biodataResponse: PolibatamResponseBiodata = await polibatamInstance(
         {
@@ -46,10 +49,13 @@ class AuthController {
         }
       );
 
-      console.log("biodataResponse", biodataResponse);
+      if (!biodataResponse || !biodataResponse.data) {
+        throw new Error("Gagal mengambil data profil pengguna dari API Polibatam.");
+      }
 
-      if (biodataResponse.data.role === "Mahasiswa")
-        throw new Error("Mahasiswa tidak bisa login");
+      if (biodataResponse.data.role === "Mahasiswa") {
+        throw new Error("Akses ditolak: role Mahasiswa tidak diizinkan masuk ke sistem.");
+      }
 
       const user = await UserRepository.checkOrInsertUser({
         nip: biodataResponse.data.id,
@@ -65,18 +71,6 @@ class AuthController {
           user: user,
         }),
       };
-
-      // const user = await UserRepository.FetchUserByNIP(data.username);
-
-      // const payload = {
-      //   user: {
-      //     ...user,
-      //   },
-      //   token: EncryptToken({
-      //     secretkey: "",
-      //     user: user,
-      //   }),
-      // };
 
       return await Ok({ res, data: payload, message: "Login success" });
     } catch (error) {
