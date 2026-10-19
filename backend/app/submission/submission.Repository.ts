@@ -50,7 +50,13 @@ class SubmissionRepository {
         const [results, count, meta] = await Promise.all([
           tx.tbl_submission.findMany({
             where,
-            include: { creator: true },
+            include: {
+              creator: true,
+              verifications: {
+                include: { verifier: true },
+                orderBy: { stage: "asc" },
+              },
+            },
             skip: (page - 1) * page_size,
             take: page_size,
             orderBy: { created_at: "desc" },
@@ -62,10 +68,10 @@ class SubmissionRepository {
         return this.buildResponse(results, count, page, page_size, meta);
       }
 
-      // Non-admins: ONLY creator or submitter
+      // Non-admins: creator or assigned verifier
       const accessOR: Prisma.tbl_submissionWhereInput[] = [
-        { creator_id: user.id }, // created by the user
-        // { users: { some: { user_id: user.id } } }, // explicitly submitted by the user
+        { creator_id: user.id },
+        { verifications: { some: { verifier_id: user.id } } },
       ];
 
       const where: Prisma.tbl_submissionWhereInput = {
@@ -76,15 +82,16 @@ class SubmissionRepository {
         ],
       };
 
-      console.log("where", where);
-      for (const element of (where as any).AND ?? []) {
-        console.log("element", element);
-      }
-
       const [results, count, meta] = await Promise.all([
         tx.tbl_submission.findMany({
           where,
-          include: { creator: true },
+          include: {
+            creator: true,
+            verifications: {
+              include: { verifier: true },
+              orderBy: { stage: "asc" },
+            },
+          },
           skip: (page - 1) * page_size,
           take: page_size,
           orderBy: { created_at: "desc" },
@@ -183,6 +190,12 @@ class SubmissionRepository {
             creator: true,
           },
         },
+        verifications: {
+          orderBy: { stage: "asc" },
+          include: {
+            verifier: true,
+          },
+        },
         creator: true,
         modifier: true,
       },
@@ -267,7 +280,36 @@ class SubmissionRepository {
         },
       });
 
-      if (submission.status == SubmissionStatus.REJECTED) {
+      if (submission.status == SubmissionStatus.REJECTED && payload.status == SubmissionStatus.POSTED) {
+        // Reset verifications to PENDING and restart at stage 1
+        await tx.tbl_submission_verification.updateMany({
+          where: { submission_id },
+          data: {
+            status: "PENDING",
+            remarks: null,
+            acted_at: null,
+          },
+        });
+
+        await tx.tbl_submission.update({
+          where: { id: submission_id },
+          data: { current_stage: 1 },
+        });
+
+        const firstVerification = await tx.tbl_submission_verification.findFirst({
+          where: { submission_id, stage: 1 },
+        });
+        if (firstVerification) {
+          await tx.tbl_notification.create({
+            data: {
+              user_id: firstVerification.verifier_id,
+              title: "Pengajuan SK Diajukan Ulang (Revisi)",
+              message: `Pengajuan SK "${submission.title}" telah diperbaiki dan diajukan kembali untuk verifikasi Tahap 1.`,
+              link: `/submission/${submission.id}`,
+            },
+          });
+        }
+      } else if (submission.status == SubmissionStatus.REJECTED) {
         await tx.tbl_submission.update({
           where: { id: submission.id },
           data: { status: SubmissionStatus.DRAFT },
@@ -424,6 +466,258 @@ class SubmissionRepository {
       });
 
       return submission;
+    });
+  }
+
+  async AssignVerifiers({
+    submission_id,
+    verifiers,
+    user,
+  }: {
+    submission_id: string;
+    verifiers: { stage: number; stage_name?: string; verifier_id: string }[];
+    user: tbm_user;
+  }) {
+    return await prisma.$transaction(async (tx) => {
+      const submission = await tx.tbl_submission.findFirst({
+        where: { id: submission_id, is_deleted: false },
+      });
+      if (!submission) throw new Error("Pengajuan tidak ditemukan.");
+
+      // Remove existing verifications for this submission
+      await tx.tbl_submission_verification.deleteMany({
+        where: { submission_id },
+      });
+
+      // Insert new verifiers
+      await tx.tbl_submission_verification.createMany({
+        data: verifiers.map((v) => ({
+          submission_id,
+          stage: v.stage,
+          stage_name: v.stage_name || `Tahap ${v.stage}`,
+          verifier_id: v.verifier_id,
+          status: "PENDING",
+        })),
+      });
+
+      const updatedSubmission = await tx.tbl_submission.update({
+        where: { id: submission_id },
+        data: {
+          total_stages: verifiers.length,
+          current_stage: 1,
+          status: SubmissionStatus.POSTED,
+        },
+      });
+
+      await tx.tbl_submission_log.create({
+        data: {
+          creator_id: user.id,
+          submission_id,
+          status: SubmissionStatus.POSTED,
+          remarks: `${user.nama} mengatur alur verifikasi ${verifiers.length} tahap untuk ${submission.title}`,
+        },
+      });
+
+      // Send in-app notification to Stage 1 verifier
+      const firstVerifier = verifiers.find((v) => v.stage === 1);
+      if (firstVerifier) {
+        await tx.tbl_notification.create({
+          data: {
+            user_id: firstVerifier.verifier_id,
+            title: "Tugas Verifikasi Tahap 1",
+            message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan keputusan Anda.`,
+            link: `/submission/${submission.id}`,
+          },
+        });
+      }
+
+      return updatedSubmission;
+    });
+  }
+
+  async VerifySubmission({
+    submission_id,
+    action,
+    remarks,
+    user,
+  }: {
+    submission_id: string;
+    action: "APPROVE" | "REJECT";
+    remarks?: string;
+    user: tbm_user;
+  }) {
+    return await prisma.$transaction(async (tx) => {
+      const submission = await tx.tbl_submission.findFirst({
+        where: { id: submission_id, is_deleted: false },
+        include: {
+          verifications: {
+            orderBy: { stage: "asc" },
+            include: { verifier: true },
+          },
+          creator: true,
+        },
+      });
+
+      if (!submission) throw new Error("Pengajuan tidak ditemukan.");
+      if (submission.status !== SubmissionStatus.POSTED) {
+        throw new Error(
+          `Pengajuan berstatus ${submission.status}, hanya pengajuan DIPOSTING yang dapat diverifikasi.`
+        );
+      }
+
+      const currentVerification = submission.verifications.find(
+        (v) => v.stage === submission.current_stage
+      );
+
+      if (!currentVerification) {
+        throw new Error(
+          `Verifikasi tahap ${submission.current_stage} belum dikonfigurasi.`
+        );
+      }
+
+      if (currentVerification.verifier_id !== user.id && !user.is_admin) {
+        throw new Error(
+          "Anda tidak memiliki hak akses untuk memverifikasi tahap ini."
+        );
+      }
+
+      if (action === "REJECT") {
+        await tx.tbl_submission_verification.update({
+          where: { id: currentVerification.id },
+          data: {
+            status: "REJECTED",
+            remarks: remarks || "",
+            acted_at: new Date(),
+          },
+        });
+
+        const updated = await tx.tbl_submission.update({
+          where: { id: submission_id },
+          data: { status: SubmissionStatus.REJECTED },
+        });
+
+        await tx.tbl_submission_log.create({
+          data: {
+            creator_id: user.id,
+            submission_id,
+            status: SubmissionStatus.REJECTED,
+            remarks: `Ditolak pada ${currentVerification.stage_name || `Tahap ${submission.current_stage}`} oleh ${user.nama}`,
+            reject_remarks: remarks,
+          },
+        });
+
+        if (submission.creator_id) {
+          await tx.tbl_notification.create({
+            data: {
+              user_id: submission.creator_id,
+              title: "Pengajuan SK Ditolak",
+              message: `Pengajuan "${submission.title}" ditolak pada ${currentVerification.stage_name || `Tahap ${submission.current_stage}`}. Alasan: ${remarks}`,
+              link: `/submission/${submission.id}`,
+            },
+          });
+        }
+
+        return updated;
+      }
+
+      // If APPROVE:
+      await tx.tbl_submission_verification.update({
+        where: { id: currentVerification.id },
+        data: {
+          status: "APPROVED",
+          remarks: remarks || "",
+          acted_at: new Date(),
+        },
+      });
+
+      await tx.tbl_submission_log.create({
+        data: {
+          creator_id: user.id,
+          submission_id,
+          status: `TAHAP_${submission.current_stage}_DISETUJUI`,
+          remarks: `Disetujui pada ${currentVerification.stage_name || `Tahap ${submission.current_stage}`} oleh ${user.nama}`,
+        },
+      });
+
+      const isFinalStage = submission.current_stage >= submission.total_stages;
+
+      if (!isFinalStage) {
+        const nextStage = submission.current_stage + 1;
+        const updated = await tx.tbl_submission.update({
+          where: { id: submission_id },
+          data: { current_stage: nextStage },
+        });
+
+        const nextVerification = submission.verifications.find(
+          (v) => v.stage === nextStage
+        );
+        if (nextVerification) {
+          await tx.tbl_notification.create({
+            data: {
+              user_id: nextVerification.verifier_id,
+              title: `Tugas Verifikasi Tahap ${nextStage}`,
+              message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan keputusan Anda.`,
+              link: `/submission/${submission.id}`,
+            },
+          });
+        }
+
+        return updated;
+      }
+
+      // FINAL APPROVAL: generate docx template
+      const list_consider = this.createDocumentList({
+        items: submission.list_consider,
+        type: "Alphabet",
+      });
+      const list_observe = this.createDocumentList({
+        items: submission.list_observe,
+        type: "Numeric",
+      });
+      const list_decide = this.createDocumentList({
+        items: submission.list_decide,
+        type: "NumAlphabet",
+      });
+
+      const filepath = await DocxTemplateService.submissionApproved({
+        title: submission.title.toUpperCase(),
+        list_consider,
+        list_observe,
+        list_decide,
+        date: moment(submission.pickup_plan).format("DD MMMM YYYY"),
+      });
+
+      if (!filepath) throw new Error("Gagal membuat borang surat keputusan");
+
+      const updated = await tx.tbl_submission.update({
+        where: { id: submission_id },
+        data: {
+          status: SubmissionStatus.APPROVED,
+          filepath,
+        },
+      });
+
+      await tx.tbl_submission_log.create({
+        data: {
+          creator_id: user.id,
+          submission_id,
+          status: SubmissionStatus.APPROVED,
+          remarks: `Seluruh tahap verifikasi telah disetujui. Naskah borang SK otomatis dibuat.`,
+        },
+      });
+
+      if (submission.creator_id) {
+        await tx.tbl_notification.create({
+          data: {
+            user_id: submission.creator_id,
+            title: "Pengajuan SK Disetujui Penuh",
+            message: `Pengajuan "${submission.title}" telah disetujui pada seluruh tahap verifikasi dan siap diterbitkan.`,
+            link: `/submission/${submission.id}`,
+          },
+        });
+      }
+
+      return updated;
     });
   }
 

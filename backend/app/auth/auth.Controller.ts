@@ -46,6 +46,33 @@ class AuthController {
           staff: "Tenaga Kependidikan",
           status_karyawan: "Pegawai Tetap",
         },
+        direktur: {
+          nip: "direktur",
+          nama: "Ir. Bambang Hendrawan, S.T., M.S.M., Ph.D. (Direktur)",
+          email: "direktur@polibatam.ac.id",
+          is_admin: false,
+          unit: "Pimpinan Politeknik Negeri Batam",
+          staff: "Direktur",
+          status_karyawan: "PNS",
+        },
+        wadir: {
+          nip: "wadir",
+          nama: "Dr. Ahmad Riyadi, S.T., M.T. (Wakil Direktur I)",
+          email: "wadir@polibatam.ac.id",
+          is_admin: false,
+          unit: "Pimpinan Politeknik Negeri Batam",
+          staff: "Wakil Direktur",
+          status_karyawan: "PNS",
+        },
+        wakildirektur: {
+          nip: "wadir",
+          nama: "Dr. Ahmad Riyadi, S.T., M.T. (Wakil Direktur I)",
+          email: "wadir@polibatam.ac.id",
+          is_admin: false,
+          unit: "Pimpinan Politeknik Negeri Batam",
+          staff: "Wakil Direktur",
+          status_karyawan: "PNS",
+        },
       };
 
       const lowerUsername = (data.username || "").trim().toLowerCase();

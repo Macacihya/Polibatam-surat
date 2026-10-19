@@ -44,3 +44,35 @@ export const SubmissionPublishSchema = z.object({
 });
 
 export type SubmissionPublishSchema = z.infer<typeof SubmissionPublishSchema>;
+
+export const AssignVerifiersSchema = z.object({
+  verifiers: z
+    .array(
+      z.object({
+        stage: z.number().int().min(1).max(3),
+        stage_name: z.string().optional(),
+        verifier_id: z.string().min(1, "Verifier is required"),
+      })
+    )
+    .min(1, "Minimal 1 verifikator harus dipilih"),
+});
+
+export type AssignVerifiersSchema = z.infer<typeof AssignVerifiersSchema>;
+
+export const VerifySubmissionSchema = z.object({
+  action: z.enum(["APPROVE", "REJECT"]),
+  remarks: z.string().optional(),
+}).refine(
+  (data) => {
+    if (data.action === "REJECT" && (!data.remarks || data.remarks.trim() === "")) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Alasan penolakan wajib diisi jika menolak.",
+    path: ["remarks"],
+  }
+);
+
+export type VerifySubmissionSchema = z.infer<typeof VerifySubmissionSchema>;

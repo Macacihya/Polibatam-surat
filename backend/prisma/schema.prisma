@@ -66,9 +66,11 @@ model tbm_user {
   document_creator  tbl_document[] @relation("tbl_document_creator")
   document_modifier tbl_document[] @relation("tbl_document_modifier")
 
-  submission_creator     tbl_submission[]     @relation("tbl_submission_creator")
-  submission_modifier    tbl_submission[]     @relation("tbl_submission_modifier")
-  submission_log_creator tbl_submission_log[] @relation("tbl_submission_log_creator")
+  submission_creator     tbl_submission[]              @relation("tbl_submission_creator")
+  submission_modifier    tbl_submission[]              @relation("tbl_submission_modifier")
+  submission_log_creator tbl_submission_log[]          @relation("tbl_submission_log_creator")
+  verifications          tbl_submission_verification[]
+  notifications          tbl_notification[]
   units                  tbm_unit[]
 }
 
@@ -209,11 +211,15 @@ model tbl_submission {
   updated_at DateTime @default(now())
   is_deleted Boolean  @default(false)
 
-  groups    tbl_submission_group[]
-  users     tbl_submission_user[]
-  units     tbl_submission_unit[]
-  documents tbl_document[]
-  logs      tbl_submission_log[]
+  current_stage Int     @default(1)
+  total_stages  Int     @default(3)
+
+  groups        tbl_submission_group[]
+  users         tbl_submission_user[]
+  units         tbl_submission_unit[]
+  documents     tbl_document[]
+  logs          tbl_submission_log[]
+  verifications tbl_submission_verification[]
 }
 
 model tbl_submission_log {
@@ -256,3 +262,38 @@ model tbl_submission_unit {
   submission    tbl_submission @relation(fields: [submission_id], references: [id])
   unit          tbm_unit       @relation(fields: [unit_name], references: [name])
 }
+
+model tbl_submission_verification {
+  id            String         @id @default(cuid())
+  submission_id String
+  submission    tbl_submission @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+
+  stage         Int
+  stage_name    String?
+
+  verifier_id   String
+  verifier      tbm_user       @relation(fields: [verifier_id], references: [id])
+
+  status        String         @default("PENDING") // PENDING, APPROVED, REJECTED
+  remarks       String?
+  acted_at      DateTime?
+
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+
+  @@unique([submission_id, stage])
+}
+
+model tbl_notification {
+  id         String   @id @default(cuid())
+  user_id    String
+  user       tbm_user @relation(fields: [user_id], references: [id])
+
+  title      String
+  message    String
+  link       String?
+  is_read    Boolean  @default(false)
+
+  created_at DateTime @default(now())
+}
+

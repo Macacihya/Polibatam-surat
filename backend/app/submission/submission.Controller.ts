@@ -114,6 +114,52 @@ class SubmissionController {
       return ErrorResponse({ res, error });
     }
   }
+
+  async AssignVerifiers(req: Request, res: Response) {
+    try {
+      const { id: submission_id } = req.params;
+      const { verifiers } = req.body;
+
+      const submission = await submissionRepository.AssignVerifiers({
+        submission_id,
+        verifiers,
+        user: req.cookies.user,
+      });
+
+      return Ok({
+        res,
+        data: submission,
+        message: "Verifikator berhasil ditugaskan dan notifikasi telah dikirim.",
+      });
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
+
+  async VerifySubmission(req: Request, res: Response) {
+    try {
+      const { id: submission_id } = req.params;
+      const { action, remarks } = req.body;
+
+      const submission = await submissionRepository.VerifySubmission({
+        submission_id,
+        action,
+        remarks,
+        user: req.cookies.user,
+      });
+
+      return Ok({
+        res,
+        data: submission,
+        message:
+          action === "APPROVE"
+            ? "Persetujuan verifikasi berhasil disimpan."
+            : "Penolakan verifikasi berhasil disimpan.",
+      });
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
 }
 
 export default new SubmissionController();

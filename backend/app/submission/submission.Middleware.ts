@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { ErrorResponse } from "../../utils/api-response";
-import { SubmissionPublishSchema, SubmissionSchema } from "./submission.Schema";
+import {
+  AssignVerifiersSchema,
+  SubmissionPublishSchema,
+  SubmissionSchema,
+  VerifySubmissionSchema,
+} from "./submission.Schema";
 import { UploadDocument } from "../../utils/multer";
 import submissionRepository from "./submission.Repository";
 import {
@@ -138,6 +143,38 @@ class SubmissionMiddleware {
       const submission = await submissionRepository.FetchById(submission_id);
       if (!submission) throw new Error("Submission not found.");
 
+      next();
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
+
+  async SchemaAssignVerifiersMiddleware(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      if (!req.cookies.user?.is_admin) {
+        throw new Error("Hanya Admin yang dapat menugaskan verifikator.");
+      }
+
+      const validate = await AssignVerifiersSchema.parseAsync(req.body);
+      req.body = validate;
+      next();
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
+
+  async SchemaVerifyMiddleware(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const validate = await VerifySubmissionSchema.parseAsync(req.body);
+      req.body = validate;
       next();
     } catch (error) {
       return ErrorResponse({ res, error });
