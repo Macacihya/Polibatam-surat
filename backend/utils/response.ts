@@ -11,11 +11,14 @@ const KEY_FILEPATH_LIST: string[] = [
 const KEY_PATH_STRINGIFY_LIST: string[] = ["employee"];
 const KEY_DELETE_LIST: string[] = ["password", "is_deleted"];
 
-const appUrl = ENV.APP_URL;
-
 const GetSignedUrl = (key: string) => {
   if (!key) return key;
-  return `${appUrl}/repository/${key}`;
+  if (key.startsWith("http://") || key.startsWith("https://")) {
+    return key;
+  }
+  const appUrl = process.env.APP_URL || ENV.APP_URL || "http://localhost:4005";
+  const cleanKey = key.replace(/^\/?(repository\/)?/, "");
+  return `${appUrl}/repository/${cleanKey}`;
 };
 
 const HandleResponseData = (params: { [key: string]: any }) => {

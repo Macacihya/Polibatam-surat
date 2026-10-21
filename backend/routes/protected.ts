@@ -7,6 +7,7 @@ import SubmissionRoute from "../app/submission/submission.Route";
 import UserRoute from "../app/user/user.Route";
 import { UnitRoute } from "../app/unit/unit.Route";
 import { RegulationRoute } from "../app/regulation/regulation.Route";
+import NotificationRoute from "../app/notification/notification.Route";
 
 const protectedRoutes = Router()
   .use("/dashboard", DashboardRoute)
@@ -15,7 +16,7 @@ const protectedRoutes = Router()
   .use("/group", GroupRoute)
   .use("/unit", UnitRoute)
   .use("/user", UserRoute)
-
+  .use("/notification", NotificationRoute)
   .use("/regulation", RegulationRoute);
 
 export { protectedRoutes };

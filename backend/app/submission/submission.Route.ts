@@ -6,6 +6,10 @@ import submissionController from "./submission.Controller";
 const SubmissionRoute = Router()
   .put("/status/:id", submissionMiddleware.UpdateStatusMiddleware, submissionController.UpdateStatus)
   .put("/publish/:id", submissionMiddleware.UploadMiddleware, submissionMiddleware.SchemaPublishMiddleware, submissionController.Publish)
+  .put("/assign-verifiers/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaAssignVerifiersMiddleware, submissionController.AssignVerifiers)
+  .post("/assign-verifiers/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaAssignVerifiersMiddleware, submissionController.AssignVerifiers)
+  .put("/verify/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaVerifyMiddleware, submissionController.VerifySubmission)
+  .post("/verify/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaVerifyMiddleware, submissionController.VerifySubmission)
 
   // MAIN CRUD
   .get("/", submissionController.Get)
