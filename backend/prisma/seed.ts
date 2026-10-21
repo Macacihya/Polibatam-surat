@@ -15,6 +15,15 @@ async function main() {
       status_karyawan: "PNS",
     },
     {
+      nip: "administrasi",
+      nama: "Regina Administrasi, S.Sos (Dummy)",
+      email: "administrasi@polibatam.ac.id",
+      is_admin: true,
+      unit: "Urusan Administrasi",
+      staff: "Administrasi",
+      status_karyawan: "PNS",
+    },
+    {
       nip: "dosen",
       nama: "Dr. Budi Santoso, M.Kom (Dummy)",
       email: "dosen@polibatam.ac.id",
@@ -31,6 +40,24 @@ async function main() {
       unit: "Bagian Umum & Keuangan",
       staff: "Tenaga Kependidikan",
       status_karyawan: "Pegawai Tetap",
+    },
+    {
+      nip: "wadir",
+      nama: "Dr. Ahmad Riyadi, S.T., M.T. (Wakil Direktur I)",
+      email: "wadir@polibatam.ac.id",
+      is_admin: false,
+      unit: "Pimpinan Politeknik Negeri Batam",
+      staff: "Wakil Direktur",
+      status_karyawan: "PNS",
+    },
+    {
+      nip: "direktur",
+      nama: "Ir. Bambang Hendrawan, S.T., M.S.M., Ph.D. (Direktur)",
+      email: "direktur@polibatam.ac.id",
+      is_admin: false,
+      unit: "Pimpinan Politeknik Negeri Batam",
+      staff: "Direktur",
+      status_karyawan: "PNS",
     },
   ];
 

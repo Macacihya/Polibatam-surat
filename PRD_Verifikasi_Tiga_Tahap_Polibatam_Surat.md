@@ -19,13 +19,13 @@ Mendefinisikan kebutuhan produk dan arsitektur alur verifikasi pengajuan Surat K
 ## 1. Ringkasan Produk & Latar Belakang
 
 Fitur **Verifikasi Tiga Tahap** memungkinkan pengajuan Surat Keputusan (SK) diproses secara berurutan (*sequential approval*) oleh 3 verifikator yang ditugaskan oleh Admin Urusan Administrasi untuk setiap pengajuan:
-1. **Tahap 1**: Verifikasi Awal / Atasan Langsung (misal: Kaprodi / Kajur).
-2. **Tahap 2**: Verifikasi Menengah (misal: Wakil Direktur terkait).
-3. **Tahap 3**: Pengesahan Akhir (misal: Direktur Politeknik Negeri Batam).
+1. **Tahap 1**: Verifikasi Administrasi (Urusan Administrasi).
+2. **Tahap 2**: Verifikasi Wakil Direktur (Wakil Direktur terkait).
+3. **Tahap 3**: Pengesahan Direktur (Direktur Politeknik Negeri Batam).
 
 ### Masalah yang Diselesaikan:
 - **Ketergantungan WhatsApp**: Menghilangkan proses manual "chat WA satu per satu" yang sering terlewat/lama.
-- **Fleksibilitas Penugasan**: Nama/jabatan verifikator tidak boleh di-hardcode di kode program, melainkan dipilih oleh Admin sesuai jenis pengajuan.
+- **Fleksibilitas Penugasan**: Nama/jabatan verifikator tidak boleh di-hardcode di kode program, melainkan dipilih oleh Admin sesuai jenis pengajuan dengan role yang sesuai.
 - **Audit Trail & Notifikasi**: Rekam jejak siapa, kapan, keputusan (setujui/tolak), serta notifikasi terpusat di dalam aplikasi.
 
 ---
@@ -33,7 +33,7 @@ Fitur **Verifikasi Tiga Tahap** memungkinkan pengajuan Surat Keputusan (SK) dipr
 ## 2. Cakupan Produk (Scope)
 
 ### Termasuk (In-Scope MVP):
-- Form penugasan verifikator tahap 1, 2, dan 3 oleh Admin saat pengajuan diproses.
+- Form penugasan verifikator tahap 1 (Administrasi), tahap 2 (Wakil Direktur), dan tahap 3 (Direktur) oleh Admin saat pengajuan diproses.
 - Alur verifikasi sekuensial (Tahap 2 hanya aktif setelah Tahap 1 disetujui; Tahap 3 hanya aktif setelah Tahap 2 disetujui).
 - Aksi **Setujui** dan **Tolak** (Penolakan wajib menyertakan alasan).
 - Penguncian naskah pengajuan (*Read-Only*) selama verifikasi berlangsung.
@@ -53,7 +53,9 @@ Fitur **Verifikasi Tiga Tahap** memungkinkan pengajuan Surat Keputusan (SK) dipr
 | Peran | Tanggung Jawab & Batas Akses |
 | :--- | :--- |
 | **Admin / Urusan Administrasi** | Memeriksa kelengkapan berkas, menugaskan verifikator Tahap 1–3, memonitor antrean, berhak memutasi penugasan jika pejabat berhalangan, serta menerbitkan SK resmi (`PUBLISHED`). |
-| **Verifikator (Tahap 1, 2, 3)** | Hanya dapat meninjau dan memberi keputusan (*Setujui/Tolak*) pada tahap yang sedang aktif di mana dirinya ditugaskan. |
+| **Verifikator Tahap 1 (Administrasi)** | Memeriksa kelengkapan format, butir konsiderans, dokumen lampiran, dan keabsahan administratif. |
+| **Verifikator Tahap 2 (Wakil Direktur)** | Memeriksa substansi materi/kebijakan sesuai bidang wadir terkait (Wadir I/II/III). |
+| **Verifikator Tahap 3 (Direktur)** | Menyetujui pengesahan akhir SK sebelum penerbitan resmi. |
 | **Pengaju (Dosen/Staff)** | Mengajukan permohonan SK, memantau posisi tahap, dan memperbaiki draf jika status `REJECTED`. Tidak dapat mengubah data saat verifikasi aktif. |
 
 ---
@@ -63,16 +65,16 @@ Fitur **Verifikasi Tiga Tahap** memungkinkan pengajuan Surat Keputusan (SK) dipr
 ```mermaid
 graph TD
     A[Pengusul: Dosen/Staff] -->|Submit Usulan| B[Status: POSTED]
-    B -->|Admin menunjuk Verifikator 1, 2, 3| C[Tahap 1 Aktif: Notifikasi ke Verifikator 1]
+    B -->|Admin menunjuk Verifikator 1, 2, 3| C[Tahap 1 Aktif: Verifikasi Administrasi]
     
-    C -->|Verifikator 1: Tolak| R[Status: REJECTED + Alasan Wajib]
-    C -->|Verifikator 1: Setujui| D[Tahap 2 Aktif: Notifikasi ke Verifikator 2]
+    C -->|Administrasi: Tolak| R[Status: REJECTED + Alasan Wajib]
+    C -->|Administrasi: Setujui| D[Tahap 2 Aktif: Verifikasi Wakil Direktur]
     
-    D -->|Verifikator 2: Tolak| R
-    D -->|Verifikator 2: Setujui| E[Tahap 3 Aktif: Notifikasi ke Verifikator 3]
+    D -->|Wakil Direktur: Tolak| R
+    D -->|Wakil Direktur: Setujui| E[Tahap 3 Aktif: Pengesahan Direktur]
     
-    E -->|Verifikator 3: Tolak| R
-    E -->|Verifikator 3: Setujui| F[Status: APPROVED]
+    E -->|Direktur: Tolak| R
+    E -->|Direktur: Setujui| F[Status: APPROVED]
     
     R -->|Pengusul merevisi draf & submit ulang| B
     
@@ -88,11 +90,11 @@ Berikut adalah jawaban dan keputusan arsitektur resmi atas pertanyaan terbuka pa
 
 | ID | Topik Pertanyaan | Jawaban & Keputusan Teknis/Bisnis |
 | :---: | :--- | :--- |
-| **Q-01** | **Multi-verifikator per tahap**: Jika admin memilih beberapa orang dalam satu tahap, apakah semua harus setuju, atau cukup satu? | **Tepat 1 Verifikator Utama per Tahap (1-to-1).**<br>Setiap tahap hanya memiliki 1 pejabat penanggung jawab (Tahap 1: Atasan/Kaprodi, Tahap 2: Wadir, Tahap 3: Direktur). Menghindari kerumitan kuorum/voting yang berisiko membuat pengajuan macet jika salah satu pejabat cuti. Jika pejabat berhalangan, Admin berwenang memutasi penugasan. |
-| **Q-02** | **Urutan tahap**: Apakah 3 tahap selalu wajib, atau bisa ditiadakan pada jenis SK tertentu? | **Fleksibel 1 s.d. 3 Tahap (Maksimal 3).**<br>Default 3 tahap. Namun Admin dapat menyesuaikan tahap yang diperlukan sesuai jenis SK (misal SK sederhana hanya butuh 2 tahap). Sistem mengeksekusi secara berurutan; begitu tahap terakhir yang didaftarkan disetujui, status langsung final (`APPROVED`). |
+| **Q-01** | **Multi-verifikator per tahap**: Jika admin memilih beberapa orang dalam satu tahap, apakah semua harus setuju, atau cukup satu? | **Tepat 1 Verifikator Utama per Tahap (1-to-1).**<br>Setiap tahap hanya memiliki 1 pejabat penanggung jawab (Tahap 1: Administrasi, Tahap 2: Wakil Direktur, Tahap 3: Direktur). Menghindari kerumitan kuorum/voting yang berisiko membuat pengajuan macet jika salah satu pejabat cuti. Jika pejabat berhalangan, Admin berwenang memutasi penugasan. |
+| **Q-02** | **Urutan tahap**: Apakah 3 tahap selalu wajib, atau bisa ditiadakan pada jenis SK tertentu? | **Fleksibel 1 s.d. 3 Tahap (Maksimal 3).**<br>Default 3 tahap (Administrasi → Wakil Direktur → Direktur). Namun Admin dapat menyesuaikan tahap yang diperlukan sesuai jenis SK (misal SK sederhana hanya butuh 2 tahap). Sistem mengeksekusi secara berurutan; begitu tahap terakhir yang didaftarkan disetujui, status langsung final (`APPROVED`). |
 | **Q-03** | **Penolakan vs Revisi**: Apakah Tolak mengakhiri pengajuan, atau dikembalikan ke pengaju? Perlu tombol khusus Revisi? | **Tolak = Mengembalikan berkas untuk diperbaiki pengaju.**<br>Memanfaatkan alur yang sudah ada di codebase: saat status `REJECTED`, pengaju secara otomatis memiliki tombol `Edit` di tabel pengajuan untuk memperbaiki naskah/lampiran, lalu mengirim ulang (`POSTED`). Tidak perlu membuat status baru `REVISION`. |
 | **Q-04** | **Perubahan penugasan**: Siapa yang boleh mengganti verifikator di tengah jalan? Apakah tahap yang sudah lewat diulang? | **Hanya Super Admin / Urusan Administrasi.**<br>Admin hanya dapat mengganti verifikator pada tahap yang statusnya masih `PENDING`. Tahap yang sudah `APPROVED` **tidak perlu diulang**. Riwayat mutasi dicatat di `tbl_submission_log`. |
-| **Q-05** | **Revisi dokumen**: Jika pengaju mengganti dokumen saat verifikasi, alur kembali ke mana? | **Dokumen Read-Only saat aktif; Jika ditolak & diperbaiki, wajib MENGULANG dari Tahap 1.**<br>Pengaju dilarang mengubah dokumen saat verifikasi berjalan. Jika ditolak dan direvisi, verifikasi harus diulang dari Tahap 1 demi kepastian hukum bahwa pejabat tahap 1 juga menyetujui versi dokumen terbaru. |
+| **Q-05** | **Revisi dokumen**: Jika pengaju mengganti dokumen saat verifikasi, alur kembali ke mana? | **Dokumen Read-Only saat aktif; Jika ditolak & diperbaiki, wajib MENGULANG dari Tahap 1.**<br>Pengaju dilarang mengubah dokumen saat verifikasi berjalan. Jika ditolak dan direvisi, verifikasi harus diulang dari Tahap 1 (Administrasi) demi kepastian hukum bahwa berkas diperiksa ulang dari awal. |
 | **Q-06** | **Saluran Notifikasi**: Cukup lonceng aplikasi atau perlu email? | **Cukup In-App Notification (Lonceng & Task Drawer).**<br>Notifikasi email ditunda ke fase lanjutan untuk menghindari dependensi SMTP server, risiko antrean background worker, dan email spam/bounce kampus. |
 | **Q-07** | **Status akhir alur**: Setelah tahap 3 selesai, apakah status Disetujui, Menunggu TTE, atau Menunggu Penerbitan? | **Status menjadi `APPROVED` (Disetujui).**<br>Mengikuti alur eksisting aplikasi: status `APPROVED` langsung memicu pembuatan draf borang SK Word (`.docx`). Admin mengunduh borang untuk tanda tangan basah/TTE offline, lalu mengunggah file sah di form `/submission/form-publish` (`PUBLISHED`). Jangan ubah nama status agar dashboard dan filter tab tidak pecah. |
 | **Q-08** | **Cakupan surat**: Apakah pola tiga tahap berlaku untuk SK dan surat lainnya? | **Fokus MVP pada Surat Keputusan (SK).**<br>Arsitektur tabel penugasan dirancang modular (`submission_id`) sehingga di kemudian hari Surat Tugas atau surat keluar lainnya dapat langsung memakai modul ini tanpa perubahan skema. |
@@ -124,7 +126,7 @@ model tbl_submission_verification {
   submission    tbl_submission @relation(fields: [submission_id], references: [id], onDelete: Cascade)
   
   stage         Int            // 1, 2, atau 3
-  stage_name    String?        // Contoh: "Atasan Langsung", "Wakil Direktur", "Direktur"
+  stage_name    String?        // Contoh: "Verifikasi Administrasi", "Verifikasi Wakil Direktur", "Pengesahan Direktur"
   
   verifier_id   String
   verifier      tbm_user       @relation(fields: [verifier_id], references: [id])

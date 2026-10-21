@@ -300,11 +300,13 @@ class SubmissionRepository {
           where: { submission_id, stage: 1 },
         });
         if (firstVerification) {
+          const stage1Name =
+            firstVerification.stage_name || "Verifikasi Administrasi";
           await tx.tbl_notification.create({
             data: {
               user_id: firstVerification.verifier_id,
               title: "Pengajuan SK Diajukan Ulang (Revisi)",
-              message: `Pengajuan SK "${submission.title}" telah diperbaiki dan diajukan kembali untuk verifikasi Tahap 1.`,
+              message: `Pengajuan SK "${submission.title}" telah diperbaiki dan diajukan kembali untuk ${stage1Name} (Tahap 1).`,
               link: `/submission/${submission.id}`,
             },
           });
@@ -484,6 +486,24 @@ class SubmissionRepository {
       });
       if (!submission) throw new Error("Pengajuan tidak ditemukan.");
 
+      // Validate all verifiers exist in the database
+      const verifierIds = verifiers.map((v) => v.verifier_id);
+      const existingUsers = await tx.tbm_user.findMany({
+        where: { id: { in: verifierIds }, is_deleted: false },
+      });
+      if (existingUsers.length !== verifierIds.length) {
+        throw new Error(
+          "Satu atau lebih verifikator yang dipilih tidak terdaftar di sistem."
+        );
+      }
+
+      // Default stage names (Administrasi -> Wakil Direktur -> Direktur)
+      const stageNameMap: Record<number, string> = {
+        1: "Verifikasi Administrasi",
+        2: "Verifikasi Wakil Direktur",
+        3: "Pengesahan Direktur",
+      };
+
       // Remove existing verifications for this submission
       await tx.tbl_submission_verification.deleteMany({
         where: { submission_id },
@@ -494,7 +514,8 @@ class SubmissionRepository {
         data: verifiers.map((v) => ({
           submission_id,
           stage: v.stage,
-          stage_name: v.stage_name || `Tahap ${v.stage}`,
+          stage_name:
+            v.stage_name || stageNameMap[v.stage] || `Tahap ${v.stage}`,
           verifier_id: v.verifier_id,
           status: "PENDING",
         })),
@@ -518,14 +539,18 @@ class SubmissionRepository {
         },
       });
 
-      // Send in-app notification to Stage 1 verifier
+      // Send in-app notification to Stage 1 verifier (Administrasi)
       const firstVerifier = verifiers.find((v) => v.stage === 1);
       if (firstVerifier) {
+        const stage1Name =
+          firstVerifier.stage_name ||
+          stageNameMap[1] ||
+          "Verifikasi Administrasi";
         await tx.tbl_notification.create({
           data: {
             user_id: firstVerifier.verifier_id,
-            title: "Tugas Verifikasi Tahap 1",
-            message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan keputusan Anda.`,
+            title: `Tugas ${stage1Name} (Tahap 1)`,
+            message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan verifikasi administrasi Anda.`,
             link: `/submission/${submission.id}`,
           },
         });
@@ -648,14 +673,24 @@ class SubmissionRepository {
           data: { current_stage: nextStage },
         });
 
+        const stageNameMap: Record<number, string> = {
+          1: "Verifikasi Administrasi",
+          2: "Verifikasi Wakil Direktur",
+          3: "Pengesahan Direktur",
+        };
+
         const nextVerification = submission.verifications.find(
           (v) => v.stage === nextStage
         );
         if (nextVerification) {
+          const nextStageName =
+            nextVerification.stage_name ||
+            stageNameMap[nextStage] ||
+            `Tahap ${nextStage}`;
           await tx.tbl_notification.create({
             data: {
               user_id: nextVerification.verifier_id,
-              title: `Tugas Verifikasi Tahap ${nextStage}`,
+              title: `Tugas ${nextStageName} (Tahap ${nextStage})`,
               message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan keputusan Anda.`,
               link: `/submission/${submission.id}`,
             },

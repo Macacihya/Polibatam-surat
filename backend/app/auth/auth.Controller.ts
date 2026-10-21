@@ -28,6 +28,15 @@ class AuthController {
           staff: "Tenaga Kependidikan",
           status_karyawan: "PNS",
         },
+        administrasi: {
+          nip: "administrasi",
+          nama: "Regina Administrasi, S.Sos (Dummy)",
+          email: "administrasi@polibatam.ac.id",
+          is_admin: true,
+          unit: "Urusan Administrasi",
+          staff: "Administrasi",
+          status_karyawan: "PNS",
+        },
         dosen: {
           nip: "dosen",
           nama: "Dr. Budi Santoso, M.Kom (Dummy)",
