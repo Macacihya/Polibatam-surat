@@ -7,5 +7,15 @@ export const SUBMISSION_STATUS = {
   PUBLISHED: "PUBLISHED",
   REJECTED: "REJECTED",
 }
-  
+
 export const SUBMISSION_STATUSES = Object.values(SUBMISSION_STATUS)
+
+// ---- Alur verifikasi surat (3 tahap) ----
+export const VERIFICATION_STAGE_COUNT = 3
+
+export const VERIFICATION_STEP_STATE = {
+  DONE: "DONE",
+  CURRENT: "CURRENT",
+  PENDING: "PENDING",
+  REJECTED: "REJECTED",
+}

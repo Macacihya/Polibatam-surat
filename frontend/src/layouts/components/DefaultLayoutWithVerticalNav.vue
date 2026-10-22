@@ -1,5 +1,5 @@
 <script setup>
-import navItems from '@/navigation/vertical'
+import { getNavItems } from '@/navigation/vertical'
 import { themeConfig } from '@themeConfig'
 
 // Components
@@ -9,6 +9,8 @@ import NavBarI18n from '@core/components/I18n.vue'
 
 // @layouts plugin
 import { VerticalNavLayout } from '@layouts'
+
+const navItems = computed(() => getNavItems())
 
 // SECTION: Loading Indicator
 const isFallbackStateActive = ref(false)

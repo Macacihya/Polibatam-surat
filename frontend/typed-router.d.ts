@@ -48,12 +48,14 @@ declare module 'vue-router/auto/routes' {
     'setup-group-form': RouteRecordInfo<'setup-group-form', '/setup/group/form', Record<never, never>, Record<never, never>>,
     'setup-unit': RouteRecordInfo<'setup-unit', '/setup/unit', Record<never, never>, Record<never, never>>,
     'setup-user': RouteRecordInfo<'setup-user', '/setup/user', Record<never, never>, Record<never, never>>,
+    'setup-verification': RouteRecordInfo<'setup-verification', '/setup/verification', Record<never, never>, Record<never, never>>,
     'submission': RouteRecordInfo<'submission', '/submission', Record<never, never>, Record<never, never>>,
     'submission-id': RouteRecordInfo<'submission-id', '/submission/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'submission-form': RouteRecordInfo<'submission-form', '/submission/form', Record<never, never>, Record<never, never>>,
     'submission-form-publish': RouteRecordInfo<'submission-form-publish', '/submission/form-publish', Record<never, never>, Record<never, never>>,
     'surat-keputusan': RouteRecordInfo<'surat-keputusan', '/surat-keputusan', Record<never, never>, Record<never, never>>,
     'surat-tugas': RouteRecordInfo<'surat-tugas', '/surat-tugas', Record<never, never>, Record<never, never>>,
+    'verification': RouteRecordInfo<'verification', '/verification', Record<never, never>, Record<never, never>>,
   }
 }
 
