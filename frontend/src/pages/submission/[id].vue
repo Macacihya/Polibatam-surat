@@ -13,9 +13,26 @@
   </div>
     
   <VRow>
+    <!-- Progres verifikasi 3 tahap (terlihat oleh pemohon) -->
+    <VCol
+      v-if="submission?.status !== 'DRAFT' && tracking?.steps?.length"
+      cols="12"
+    >
+      <VCard
+        :loading="tracking_loading"
+        title="Progres Verifikasi"
+        subtitle="Pantau surat Anda sedang diproses oleh siapa"
+      >
+        <VCardText>
+          <VerificationStepper :steps="tracking.steps" />
+        </VCardText>
+      </VCard>
+    </VCol>
+
     <VCol
       cols="12"
       md="8"
+
     >
       <VCard
         :loading="loading"
@@ -342,9 +359,12 @@ const getStatus = type => statuses.find(status => status.type === type)
 
 const submission = computed(() => store.state.submission.report)
 const loading = computed(() => store.state.submission.loading.report)
+const tracking = computed(() => store.state.verification.tracking)
+const tracking_loading = computed(() => store.state.verification.loading.tracking)
 
 onMounted(() => {
   store.dispatch('submission/GetReport', submission_id.value)
+  store.dispatch('verification/GetTracking', submission_id.value)
 })
 </script>
 

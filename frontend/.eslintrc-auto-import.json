@@ -360,6 +360,12 @@
     "SwalDelete": true,
     "SwalUpdateStatus": true,
     "isAdmin": true,
-    "$is_admin": true
+    "$is_admin": true,
+    "mockApi": true,
+    "VERIFICATION_STAGE_COUNT": true,
+    "VERIFICATION_STEP_STATE": true,
+    "IS_VERIFICATION_MOCK": true,
+    "getVerifierStages": true,
+    "isVerifier": true
   }
 }

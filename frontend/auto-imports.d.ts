@@ -9,10 +9,13 @@ declare global {
   const $is_admin: typeof import('./src/utils/utils.js')['$is_admin']
   const COOKIE_MAX_AGE_1_YEAR: typeof import('./src/utils/constants.js')['COOKIE_MAX_AGE_1_YEAR']
   const EffectScope: typeof import('vue')['EffectScope']
+  const IS_VERIFICATION_MOCK: typeof import('./src/utils/utils.js')['IS_VERIFICATION_MOCK']
   const SUBMISSION_STATUS: typeof import('./src/utils/constants.js')['SUBMISSION_STATUS']
   const SUBMISSION_STATUSES: typeof import('./src/utils/constants.js')['SUBMISSION_STATUSES']
   const SwalDelete: typeof import('./src/utils/sweetalert.js')['SwalDelete']
   const SwalUpdateStatus: typeof import('./src/utils/sweetalert.js')['SwalUpdateStatus']
+  const VERIFICATION_STAGE_COUNT: typeof import('./src/utils/constants.js')['VERIFICATION_STAGE_COUNT']
+  const VERIFICATION_STEP_STATE: typeof import('./src/utils/constants.js')['VERIFICATION_STEP_STATE']
   const acceptHMRUpdate: typeof import('pinia')['acceptHMRUpdate']
   const alphaDashValidator: typeof import('./src/@core/utils/validators.js')['alphaDashValidator']
   const alphaValidator: typeof import('./src/@core/utils/validators.js')['alphaValidator']
@@ -55,13 +58,14 @@ declare global {
   const emailValidator: typeof import('./src/@core/utils/validators.js')['emailValidator']
   const extendRef: typeof import('@vueuse/core')['extendRef']
   const formatCalendar: typeof import('./src/utils/utils.js')['formatCalendar']
-  const formatDate: typeof import('./src/utils/utils.js')['formatDate']
+  const formatDate: typeof import('./src/@core/utils/formatters.js')['formatDate']
   const formatDateToMonthShort: typeof import('./src/@core/utils/formatters.js')['formatDateToMonthShort']
   const formatFormalDate: typeof import('./src/utils/utils.js')['formatFormalDate']
   const formatTanggal: typeof import('./src/utils/utils.js')['formatTanggal']
   const getActivePinia: typeof import('pinia')['getActivePinia']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getVerifierStages: typeof import('./src/utils/utils.js')['getVerifierStages']
   const h: typeof import('vue')['h']
   const ignorableWatch: typeof import('@vueuse/core')['ignorableWatch']
   const inject: typeof import('vue')['inject']
@@ -78,6 +82,7 @@ declare global {
   const isReadonly: typeof import('vue')['isReadonly']
   const isRef: typeof import('vue')['isRef']
   const isToday: typeof import('./src/@core/utils/helpers.js')['isToday']
+  const isVerifier: typeof import('./src/utils/utils.js')['isVerifier']
   const kFormatter: typeof import('./src/@core/utils/formatters.js')['kFormatter']
   const lengthValidator: typeof import('./src/@core/utils/validators.js')['lengthValidator']
   const logicAnd: typeof import('@vueuse/math')['logicAnd']
@@ -90,6 +95,7 @@ declare global {
   const mapStores: typeof import('pinia')['mapStores']
   const mapWritableState: typeof import('pinia')['mapWritableState']
   const markRaw: typeof import('vue')['markRaw']
+  const mockApi: typeof import('./src/utils/verificationMock.js')['mockApi']
   const nextTick: typeof import('vue')['nextTick']
   const onActivated: typeof import('vue')['onActivated']
   const onBeforeMount: typeof import('vue')['onBeforeMount']
@@ -368,10 +374,13 @@ declare module 'vue' {
     readonly $api: UnwrapRef<typeof import('./src/utils/api.js')['$api']>
     readonly COOKIE_MAX_AGE_1_YEAR: UnwrapRef<typeof import('./src/utils/constants.js')['COOKIE_MAX_AGE_1_YEAR']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly IS_VERIFICATION_MOCK: UnwrapRef<typeof import('./src/utils/utils.js')['IS_VERIFICATION_MOCK']>
     readonly SUBMISSION_STATUS: UnwrapRef<typeof import('./src/utils/constants.js')['SUBMISSION_STATUS']>
     readonly SUBMISSION_STATUSES: UnwrapRef<typeof import('./src/utils/constants.js')['SUBMISSION_STATUSES']>
     readonly SwalDelete: UnwrapRef<typeof import('./src/utils/sweetalert.js')['SwalDelete']>
     readonly SwalUpdateStatus: UnwrapRef<typeof import('./src/utils/sweetalert.js')['SwalUpdateStatus']>
+    readonly VERIFICATION_STAGE_COUNT: UnwrapRef<typeof import('./src/utils/constants.js')['VERIFICATION_STAGE_COUNT']>
+    readonly VERIFICATION_STEP_STATE: UnwrapRef<typeof import('./src/utils/constants.js')['VERIFICATION_STEP_STATE']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly alphaDashValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['alphaDashValidator']>
     readonly alphaValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['alphaValidator']>
@@ -415,12 +424,12 @@ declare module 'vue' {
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly formatCalendar: UnwrapRef<typeof import('./src/utils/utils.js')['formatCalendar']>
     readonly formatDate: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDate']>
-    readonly formatDate: UnwrapRef<typeof import('./src/utils/utils.js')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDateToMonthShort']>
     readonly formatTanggal: UnwrapRef<typeof import('./src/utils/utils.js')['formatTanggal']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
+    readonly getVerifierStages: UnwrapRef<typeof import('./src/utils/utils.js')['getVerifierStages']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
@@ -437,6 +446,8 @@ declare module 'vue' {
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isToday: UnwrapRef<typeof import('./src/@core/utils/helpers.js')['isToday']>
+    readonly isVerifier: UnwrapRef<typeof import('./src/utils/utils.js')['isVerifier']>
+    readonly kFormatter: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['kFormatter']>
     readonly lengthValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['lengthValidator']>
     readonly logicAnd: UnwrapRef<typeof import('@vueuse/math')['logicAnd']>
     readonly logicNot: UnwrapRef<typeof import('@vueuse/math')['logicNot']>
@@ -448,6 +459,7 @@ declare module 'vue' {
     readonly mapStores: UnwrapRef<typeof import('pinia')['mapStores']>
     readonly mapWritableState: UnwrapRef<typeof import('pinia')['mapWritableState']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
+    readonly mockApi: UnwrapRef<typeof import('./src/utils/verificationMock.js')['mockApi']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
@@ -720,10 +732,13 @@ declare module '@vue/runtime-core' {
     readonly $api: UnwrapRef<typeof import('./src/utils/api.js')['$api']>
     readonly COOKIE_MAX_AGE_1_YEAR: UnwrapRef<typeof import('./src/utils/constants.js')['COOKIE_MAX_AGE_1_YEAR']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly IS_VERIFICATION_MOCK: UnwrapRef<typeof import('./src/utils/utils.js')['IS_VERIFICATION_MOCK']>
     readonly SUBMISSION_STATUS: UnwrapRef<typeof import('./src/utils/constants.js')['SUBMISSION_STATUS']>
     readonly SUBMISSION_STATUSES: UnwrapRef<typeof import('./src/utils/constants.js')['SUBMISSION_STATUSES']>
     readonly SwalDelete: UnwrapRef<typeof import('./src/utils/sweetalert.js')['SwalDelete']>
     readonly SwalUpdateStatus: UnwrapRef<typeof import('./src/utils/sweetalert.js')['SwalUpdateStatus']>
+    readonly VERIFICATION_STAGE_COUNT: UnwrapRef<typeof import('./src/utils/constants.js')['VERIFICATION_STAGE_COUNT']>
+    readonly VERIFICATION_STEP_STATE: UnwrapRef<typeof import('./src/utils/constants.js')['VERIFICATION_STEP_STATE']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly alphaDashValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['alphaDashValidator']>
     readonly alphaValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['alphaValidator']>
@@ -767,12 +782,12 @@ declare module '@vue/runtime-core' {
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly formatCalendar: UnwrapRef<typeof import('./src/utils/utils.js')['formatCalendar']>
     readonly formatDate: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDate']>
-    readonly formatDate: UnwrapRef<typeof import('./src/utils/utils.js')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDateToMonthShort']>
     readonly formatTanggal: UnwrapRef<typeof import('./src/utils/utils.js')['formatTanggal']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
+    readonly getVerifierStages: UnwrapRef<typeof import('./src/utils/utils.js')['getVerifierStages']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
@@ -789,6 +804,8 @@ declare module '@vue/runtime-core' {
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isToday: UnwrapRef<typeof import('./src/@core/utils/helpers.js')['isToday']>
+    readonly isVerifier: UnwrapRef<typeof import('./src/utils/utils.js')['isVerifier']>
+    readonly kFormatter: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['kFormatter']>
     readonly lengthValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['lengthValidator']>
     readonly logicAnd: UnwrapRef<typeof import('@vueuse/math')['logicAnd']>
     readonly logicNot: UnwrapRef<typeof import('@vueuse/math')['logicNot']>
@@ -800,6 +817,7 @@ declare module '@vue/runtime-core' {
     readonly mapStores: UnwrapRef<typeof import('pinia')['mapStores']>
     readonly mapWritableState: UnwrapRef<typeof import('pinia')['mapWritableState']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
+    readonly mockApi: UnwrapRef<typeof import('./src/utils/verificationMock.js')['mockApi']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
