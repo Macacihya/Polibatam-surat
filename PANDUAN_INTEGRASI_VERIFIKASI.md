@@ -20,13 +20,16 @@ npx prisma db push
 
 Semua akun menggunakan **password sembarang** (contoh: `password`):
 
-| Username / NIP | Peran | Kegunaan Uji Coba |
-| :--- | :--- | :--- |
-| **`admin`** | Super Admin | Menugaskan 3 verifikator, memonitor seluruh pengajuan, dan publish SK resmi. |
-| **`dosen`** | Pengaju / Verifikator | Mengajukan SK atau bertindak sebagai Verifikator Tahap 1 (Kaprodi). |
-| **`wadir`** *(atau `wakildirektur`)* | Verifikator | Bertindak sebagai Verifikator Tahap 2 (Wakil Direktur). |
-| **`direktur`** | Verifikator Final | Bertindak sebagai Verifikator Tahap 3 (Direktur Polibatam). |
-| **`staff`** | Pegawai / Verifikator | Akun pegawai umum. |
+| Username / NIP | Nama & Unit | Peran Verifikasi | Kegunaan Uji Coba |
+| :--- | :--- | :--- | :--- |
+| **`198001012005`** *(alias: `ahmad`, `ahmadfauzi`)* | **Ahmad Fauzi, M.T.**<br>Jurusan Teknik Elektro | **Verifikator Tahap 1 (Unit)** | Menerima notifikasi tugas verifikasi unit, meninjau, menyetujui / menolak SK. |
+| **`staff`** *(alias: `siti`, `sitirahmawati`)* | **Siti Rahmawati, S.tr.kom**<br>Bagian Umum & Keuangan | **Verifikator Tahap 2 (Bagian Umum)** | Menerima notifikasi setelah Tahap 1 disetujui, verifikasi administrasi/umum. |
+| **`197903032003`** *(alias: `hendra`, `hendrawijaya`, `wadir`)* | **Hendra Wijaya, M.si.**<br>Wakil Direktur I | **Verifikator Tahap 3 (Pimpinan)** | Menerima notifikasi setelah Tahap 2 disetujui, persetujuan pimpinan wadir. |
+| **`admin`** | Super Administrator (Dummy)<br>P3M | Super Admin | Menugaskan verifikator, memonitor seluruh pengajuan, bypass verifikasi jika darurat. |
+| **`administrasi`** | Regina Administrasi, S.Sos<br>Urusan Administrasi | Administrasi | Mengatur alur verifikasi & penugasan verifikator. |
+| **`direktur`** | Ir. Bambang Hendrawan<br>Pimpinan Polibatam | Direktur | Pengesahan akhir SK jika 3 tahap memakai Direktur. |
+| **`dosen`** | Dr. Budi Santoso, M.Kom<br>Jurusan Teknik Informatika | Pengaju SK | Membuat draf pengajuan SK baru & menerima notifikasi approval/rejection. |
+
 
 ---
 
@@ -40,8 +43,8 @@ Authorization: Bearer <token_hasil_login>
 
 ---
 
-### A. Penugasan Verifikator (Khusus Admin)
-Digunakan ketika Admin membuka pengajuan yang berstatus `POSTED` lalu menunjuk 1 hingga 3 pejabat yang bertugas memeriksa.
+### A. Penugasan Verifikator (Khusus Admin / Urusan Administrasi)
+Digunakan ketika Admin membuka pengajuan yang berstatus `POSTED` lalu menunjuk 1 hingga 3 pejabat yang bertugas memeriksa secara berurutan: **Administrasi → Wakil Direktur → Direktur**.
 
 * **Endpoint**: `POST /submission/assign-verifiers/:id` *(atau `PUT`)*
 * **Headers**: `Authorization: Bearer <token_admin>`
@@ -51,8 +54,8 @@ Digunakan ketika Admin membuka pengajuan yang berstatus `POSTED` lalu menunjuk 1
     "verifiers": [
       {
         "stage": 1,
-        "stage_name": "Verifikasi Kaprodi",
-        "verifier_id": "dosen"
+        "stage_name": "Verifikasi Administrasi",
+        "verifier_id": "administrasi"
       },
       {
         "stage": 2,
@@ -68,8 +71,8 @@ Digunakan ketika Admin membuka pengajuan yang berstatus `POSTED` lalu menunjuk 1
   }
   ```
 * **Efek di Backend**:
-  - Menyimpan penugasan verifikator.
-  - Mengirim notifikasi lonceng ke akun Verifikator Tahap 1 (`dosen`).
+  - Menyimpan penugasan verifikator berurutan.
+  - Mengirim notifikasi lonceng ke akun Verifikator Tahap 1 (`administrasi`).
 
 ---
 
@@ -83,12 +86,13 @@ Digunakan oleh pejabat verifikator yang sedang aktif memeriksa surat pada tahapn
 ```json
 {
   "action": "APPROVE",
-  "remarks": "Naskah pertimbangan dan amar ketetapan disetujui."
+  "remarks": "Naskah kelengkapan administrasi dan butir konsiderans disetujui."
 }
 ```
 * **Efek di Backend**:
-  - Jika ini Tahap 1 atau 2: Otomatis menaikkan `current_stage` ke tahap berikutnya dan mengirim notifikasi lonceng ke verifikator berikutnya.
-  - Jika ini Tahap 3 (Final): Status pengajuan berubah jadi `APPROVED`, otomatis men-generate draf borang Word `.docx`, dan mengirim notifikasi ke pemohon.
+  - Jika ini Tahap 1 (Administrasi): Otomatis menaikkan `current_stage` ke Tahap 2 (Wakil Direktur) dan mengirim notifikasi lonceng ke Verifikator Tahap 2.
+  - Jika ini Tahap 2 (Wakil Direktur): Otomatis menaikkan `current_stage` ke Tahap 3 (Direktur) dan mengirim notifikasi lonceng ke Verifikator Tahap 3.
+  - Jika ini Tahap 3 (Final): Status pengajuan berubah jadi `APPROVED`, otomatis men-generate draf borang Word `.docx`, dan mengirim notifikasi ke pemohon bahwa pengajuan telah disetujui penuh.
 
 #### Opsi 2: Menolak Pengajuan (`REJECT`)
 > [!IMPORTANT]
@@ -96,7 +100,7 @@ Digunakan oleh pejabat verifikator yang sedang aktif memeriksa surat pada tahapn
 ```json
 {
   "action": "REJECT",
-  "remarks": "Dasar hukum UU perlu diperbarui ke versi tahun 2026."
+  "remarks": "Format konsiderans perlu disesuaikan dengan pedoman tata naskah dinas."
 }
 ```
 * **Efek di Backend**:
@@ -120,13 +124,13 @@ Digunakan oleh pejabat verifikator yang sedang aktif memeriksa surat pada tahapn
       {
         "id": "clx...",
         "stage": 1,
-        "stage_name": "Verifikasi Kaprodi",
+        "stage_name": "Verifikasi Administrasi",
         "status": "APPROVED",
-        "remarks": "Naskah konsiderans sesuai.",
+        "remarks": "Format berkas dan lampiran sesuai.",
         "acted_at": "2026-10-19T13:02:29.000Z",
         "verifier": {
-          "id": "dosen",
-          "nama": "Dr. Budi Santoso, M.Kom (Dummy)"
+          "id": "administrasi",
+          "nama": "Regina Administrasi, S.Sos (Dummy)"
         }
       },
       {
@@ -172,7 +176,7 @@ Digunakan oleh pejabat verifikator yang sedang aktif memeriksa surat pada tahapn
       "notifications": [
         {
           "id": "notif_1",
-          "title": "Tugas Verifikasi Tahap 2",
+          "title": "Tugas Verifikasi Wakil Direktur (Tahap 2)",
           "message": "Pengajuan SK \"...\" menunggu peninjauan Anda.",
           "link": "/submission/cmvansgvn005ei97iqfc01pap",
           "is_read": false,
@@ -193,12 +197,15 @@ Digunakan oleh pejabat verifikator yang sedang aktif memeriksa surat pada tahapn
 
 1. **Modal / Form Penugasan Verifikator (`Admin Only`)**:
    - Ditaruh pada menu aksi tabel pengajuan (`/submission`) atau di halaman detail.
-   - Berisi 3 dropdown pilihan verifikator (Tahap 1, Tahap 2, Tahap 3) yang mengambil data dari `GET /user`.
+   - Berisi 3 dropdown pilihan verifikator berurutan:
+     * **Tahap 1**: Verifikator Administrasi (Urusan Administrasi).
+     * **Tahap 2**: Verifikator Wakil Direktur (Wadir I, II, atau III).
+     * **Tahap 3**: Pengesahan Direktur (Direktur).
 2. **Stepper / Progres Verifikasi di Halaman Detail (`/submission/:id`)**:
    - Menampilkan visual step bar:
-     * Tahap 1: Centang Hijau (Disetujui oleh Kaprodi).
+     * Tahap 1: Centang Hijau (Disetujui oleh Administrasi).
      * Tahap 2: Kuning / Berkedip (Sedang menunggu Wakil Direktur).
-     * Tahap 3: Abu-abu (Belum aktif).
+     * Tahap 3: Abu-abu (Menunggu Direktur).
 3. **Card Aksi Keputusan (Untuk Verifikator Aktif)**:
    - Jika `current_user.id === verification.verifier_id` dan tahap tersebut sedang aktif:
      Tampilkan 2 tombol: **"Setujui"** dan **"Tolak"**.
@@ -206,3 +213,4 @@ Digunakan oleh pejabat verifikator yang sedang aktif memeriksa surat pada tahapn
 4. **Lonceng Notifikasi di Navbar**:
    - Menampilkan badge merah dengan angka `unread_count`.
    - Dropdown menu notifikasi dengan item pesan yang jika diklik langsung navigasi ke URL pengajuan terkait (`link`).
+

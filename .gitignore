@@ -1,6 +1,11 @@
 backend/.env.production
 backend/.env
 .DS_Store
+
+# Dokumen laporan tugas & materi kuliah
+LAPORAN_*.md
+*.docx
+
 node_modules/
 /package.json
 /pnpm-lock.yaml
