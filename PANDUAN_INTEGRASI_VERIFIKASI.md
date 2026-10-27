@@ -20,14 +20,16 @@ npx prisma db push
 
 Semua akun menggunakan **password sembarang** (contoh: `password`):
 
-| Username / NIP | Peran | Kegunaan Uji Coba |
-| :--- | :--- | :--- |
-| **`admin`** | Super Admin | Menugaskan 3 verifikator, memonitor seluruh pengajuan, dan publish SK resmi. |
-| **`administrasi`** | Verifikator Tahap 1 | Bertindak sebagai Verifikator Tahap 1 (Urusan Administrasi). |
-| **`wadir`** *(atau `wakildirektur`)* | Verifikator Tahap 2 | Bertindak sebagai Verifikator Tahap 2 (Wakil Direktur). |
-| **`direktur`** | Verifikator Final (Tahap 3) | Bertindak sebagai Verifikator Tahap 3 (Direktur Polibatam). |
-| **`dosen`** | Pengaju SK | Mengajukan SK (Dosen/Tenaga Pendidik). |
-| **`staff`** | Pengaju / Pegawai | Akun pegawai umum. |
+| Username / NIP | Nama & Unit | Peran Verifikasi | Kegunaan Uji Coba |
+| :--- | :--- | :--- | :--- |
+| **`198001012005`** *(alias: `ahmad`, `ahmadfauzi`)* | **Ahmad Fauzi, M.T.**<br>Jurusan Teknik Elektro | **Verifikator Tahap 1 (Unit)** | Menerima notifikasi tugas verifikasi unit, meninjau, menyetujui / menolak SK. |
+| **`staff`** *(alias: `siti`, `sitirahmawati`)* | **Siti Rahmawati, S.tr.kom**<br>Bagian Umum & Keuangan | **Verifikator Tahap 2 (Bagian Umum)** | Menerima notifikasi setelah Tahap 1 disetujui, verifikasi administrasi/umum. |
+| **`197903032003`** *(alias: `hendra`, `hendrawijaya`, `wadir`)* | **Hendra Wijaya, M.si.**<br>Wakil Direktur I | **Verifikator Tahap 3 (Pimpinan)** | Menerima notifikasi setelah Tahap 2 disetujui, persetujuan pimpinan wadir. |
+| **`admin`** | Super Administrator (Dummy)<br>P3M | Super Admin | Menugaskan verifikator, memonitor seluruh pengajuan, bypass verifikasi jika darurat. |
+| **`administrasi`** | Regina Administrasi, S.Sos<br>Urusan Administrasi | Administrasi | Mengatur alur verifikasi & penugasan verifikator. |
+| **`direktur`** | Ir. Bambang Hendrawan<br>Pimpinan Polibatam | Direktur | Pengesahan akhir SK jika 3 tahap memakai Direktur. |
+| **`dosen`** | Dr. Budi Santoso, M.Kom<br>Jurusan Teknik Informatika | Pengaju SK | Membuat draf pengajuan SK baru & menerima notifikasi approval/rejection. |
+
 
 ---
 
