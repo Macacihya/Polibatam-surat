@@ -12,6 +12,7 @@ import regulation from './modules/regulation'
 import group from './modules/group'
 import unit from './modules/unit'
 import user from './modules/user'
+import notification from './modules/notification'
 
 const store = new Store({
   modules: {
@@ -27,6 +28,7 @@ const store = new Store({
     group,
     unit,
     user,
+    notification,
   },
 })
 

@@ -26,6 +26,19 @@ class NotificationRepository {
     });
   }
 
+  async MarkAsUnread(id: string, user_id: string) {
+    return await prisma.tbl_notification.updateMany({
+      where: { id, user_id },
+      data: { is_read: false },
+    });
+  }
+
+  async Delete(id: string, user_id: string) {
+    return await prisma.tbl_notification.deleteMany({
+      where: { id, user_id },
+    });
+  }
+
   async MarkAllAsRead(user_id: string) {
     return await prisma.tbl_notification.updateMany({
       where: { user_id, is_read: false },
