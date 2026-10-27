@@ -108,6 +108,7 @@
 
 <script setup>
 import SubmissionFormRejectModal from '@/views/submission/submission-form-reject-modal.vue'
+import { toast } from 'vue-sonner'
 
 const router = useRouter()
 const route = useRoute()
@@ -197,11 +198,13 @@ const computedMoreList = computed(() => {
       onClick: () => handleUpdateStatus(item.id, 'POSTED'),
       hidden: item.status !== 'DRAFT',
     },
+    // Tombol 'Setujui Pengajuan' legacy dinonaktifkan agar tidak mem-bypass alur verifikasi 3 tahap.
+    // Pengguna diarahkan ke menu Verifikasi untuk memproses tahapan verifikasi secara berurutan.
     {
-      title: 'Setujui Pengajuan',
-      prependIcon: 'tabler-check',
-      onClick: () => handleUpdateStatus(item.id, 'APPROVED'),
-      hidden: item.status !== 'POSTED' || !isAdmin(),
+      title: 'Proses Verifikasi',
+      prependIcon: 'tabler-file-check',
+      to: '/verification',
+      hidden: item.status !== 'POSTED',
     },
     {
       title: 'Terbitkan Dokumen',
@@ -234,6 +237,10 @@ const handleDelete = async submission_id => {
 }
 
 const handleUpdateStatus = async (submission_id, status) => {
+  if (status === 'APPROVED') {
+    toast.error('Persetujuan surat harus melalui alur verifikasi 3 tahap di menu Verifikasi.')
+    return
+  }
   const confirm = await SwalUpdateStatus(status)
   if (confirm) {
     store.dispatch("submission/UpdateStatus", { id: submission_id, status })
