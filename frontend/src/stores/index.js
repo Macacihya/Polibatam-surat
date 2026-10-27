@@ -5,6 +5,7 @@ import app from './modules/app'
 import dashboard from './modules/dashboard'
 import document from './modules/document'
 import submission from './modules/submission'
+import verification from './modules/verification'
 
 import regulation from './modules/regulation'
 
@@ -19,9 +20,10 @@ const store = new Store({
     dashboard,
     document,
     submission,
+    verification,
 
     regulation,
-    
+
     group,
     unit,
     user,
