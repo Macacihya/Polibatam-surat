@@ -18,7 +18,19 @@ routes.use("/", VerifyAuthToken, protectedRoutes);
 
 // WHOAMI
 routes.get("/whoami", VerifyAuthToken, (req: Request, res: Response) => {
-  return Ok({ res, data: req.cookies.user });
+  const user = req.cookies.user;
+  const verifier_stages =
+    user?.is_admin || user?.nip === "admin"
+      ? [1, 2, 3]
+      : user?.nip === "198001012005"
+      ? [1]
+      : user?.nip === "staff"
+      ? [2]
+      : user?.nip === "197903032003" || user?.nip === "wadir"
+      ? [3]
+      : [];
+
+  return Ok({ res, data: { ...user, verifier_stages } });
 });
 
 export default routes;

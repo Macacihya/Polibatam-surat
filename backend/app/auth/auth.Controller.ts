@@ -171,13 +171,27 @@ class AuthController {
           },
         });
 
+        const verifier_stages =
+          user.is_admin || dummy.nip === "admin"
+            ? [1, 2, 3]
+            : dummy.nip === "198001012005"
+            ? [1]
+            : dummy.nip === "staff"
+            ? [2]
+            : dummy.nip === "197903032003" || dummy.nip === "wadir"
+            ? [3]
+            : [];
+
+        const userWithStages = {
+          ...user,
+          verifier_stages,
+        };
+
         const payload = {
-          user: {
-            ...user,
-          },
+          user: userWithStages,
           token: EncryptToken({
             secretkey: "dummy-secretkey",
-            user: user,
+            user: userWithStages,
           }),
         };
 
@@ -230,13 +244,27 @@ class AuthController {
         secretkey: loginResponse.data.secretkey,
       });
 
+      const verifier_stages =
+        user.is_admin || user.nip === "admin"
+          ? [1, 2, 3]
+          : user.nip === "198001012005"
+          ? [1]
+          : user.nip === "staff"
+          ? [2]
+          : user.nip === "197903032003" || user.nip === "wadir"
+          ? [3]
+          : [];
+
+      const userWithStages = {
+        ...user,
+        verifier_stages,
+      };
+
       const payload = {
-        user: {
-          ...user,
-        },
+        user: userWithStages,
         token: EncryptToken({
           secretkey: loginResponse.data.secretkey,
-          user: user,
+          user: userWithStages,
         }),
       };
 
