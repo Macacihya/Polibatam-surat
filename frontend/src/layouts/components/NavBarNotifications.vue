@@ -1,81 +1,71 @@
 <script setup>
-import avatar3 from '@images/avatars/avatar-3.png'
-import avatar4 from '@images/avatars/avatar-4.png'
-import avatar5 from '@images/avatars/avatar-5.png'
-import paypal from '@images/svg/paypal.svg'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
 
-const notifications = ref([
-  {
-    id: 1,
-    img: avatar4,
-    title: 'Congratulation Flora! 🎉',
-    subtitle: 'Won the monthly best seller badge',
-    time: 'Today',
-    isSeen: true,
-  },
-  {
-    id: 2,
-    text: 'Tom Holland',
-    title: 'New user registered.',
-    subtitle: '5 hours ago',
-    time: 'Yesterday',
-    isSeen: false,
-  },
-  {
-    id: 3,
-    img: avatar5,
-    title: 'New message received 👋🏻',
-    subtitle: 'You have 10 unread messages',
-    time: '11 Aug',
-    isSeen: true,
-  },
-  {
-    id: 4,
-    img: paypal,
-    title: 'PayPal',
-    subtitle: 'Received Payment',
-    time: '25 May',
-    isSeen: false,
-    color: 'error',
-  },
-  {
-    id: 5,
-    img: avatar3,
-    title: 'Received Order 📦',
-    subtitle: 'New order received from john',
-    time: '19 Mar',
-    isSeen: true,
-  },
-])
+const store = useStore()
+const router = useRouter()
+
+const notifications = computed(() => store.state.notification?.notifications || [])
+
+let pollTimer = null
+
+const fetchNotifications = () => {
+  const token = localStorage.getItem('App-Token')
+  if (token) {
+    store.dispatch('notification/GetNotifications')
+  }
+}
+
+onMounted(() => {
+  fetchNotifications()
+
+  // Polling pembaruan notifikasi berkala setiap 30 detik
+  pollTimer = setInterval(fetchNotifications, 30000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+  }
+})
 
 const removeNotification = notificationId => {
-  notifications.value.forEach((item, index) => {
-    if (notificationId === item.id)
-      notifications.value.splice(index, 1)
-  })
+  store.dispatch('notification/RemoveNotification', notificationId)
 }
 
-const markRead = notificationId => {
-  notifications.value.forEach(item => {
-    notificationId.forEach(id => {
-      if (id === item.id)
-        item.isSeen = true
-    })
-  })
+const markRead = notificationIds => {
+  if (Array.isArray(notificationIds)) {
+    if (notificationIds.length > 1 && notificationIds.length === notifications.value.length) {
+      store.dispatch('notification/MarkAllRead')
+    } else {
+      notificationIds.forEach(id => {
+        store.dispatch('notification/MarkRead', id)
+      })
+    }
+  } else if (notificationIds) {
+    store.dispatch('notification/MarkRead', notificationIds)
+  }
 }
 
-const markUnRead = notificationId => {
-  notifications.value.forEach(item => {
-    notificationId.forEach(id => {
-      if (id === item.id)
-        item.isSeen = false
+const markUnRead = notificationIds => {
+  if (Array.isArray(notificationIds)) {
+    notificationIds.forEach(id => {
+      store.dispatch('notification/MarkUnread', id)
     })
-  })
+  } else if (notificationIds) {
+    store.dispatch('notification/MarkUnread', notificationIds)
+  }
 }
 
 const handleNotificationClick = notification => {
-  if (!notification.isSeen)
-    markRead([notification.id])
+  if (!notification.isSeen) {
+    store.dispatch('notification/MarkRead', notification.id)
+  }
+
+  if (notification.link) {
+    router.push(notification.link).catch(() => {})
+  }
 }
 </script>
 
