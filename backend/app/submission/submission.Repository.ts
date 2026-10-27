@@ -246,12 +246,49 @@ class SubmissionRepository {
         });
       }
 
+      if (submission.status === SubmissionStatus.POSTED) {
+        await tx.tbl_submission_verification.createMany({
+          data: [
+            {
+              submission_id: submission.id,
+              stage: 1,
+              stage_name: "Verifikasi Unit",
+              verifier_id: "198001012005",
+              status: "PENDING",
+            },
+            {
+              submission_id: submission.id,
+              stage: 2,
+              stage_name: "Verifikasi Bagian Umum",
+              verifier_id: "staff",
+              status: "PENDING",
+            },
+            {
+              submission_id: submission.id,
+              stage: 3,
+              stage_name: "Verifikasi Pimpinan",
+              verifier_id: "197903032003",
+              status: "PENDING",
+            },
+          ],
+        });
+
+        await tx.tbl_notification.create({
+          data: {
+            user_id: "198001012005",
+            title: "Tugas Verifikasi Unit (Tahap 1)",
+            message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan verifikasi Anda.`,
+            link: `/submission/${submission.id}`,
+          },
+        });
+      }
+
       await tx.tbl_submission_log.create({
         data: {
           creator_id: creator.id,
           submission_id: submission.id,
 
-          status: SubmissionStatus.DRAFT,
+          status: submission.status,
           remarks: `${creator.nama} mengajukan surat keputusan ${submission.title}`,
         },
       });
@@ -422,6 +459,49 @@ class SubmissionRepository {
         include: { creator: true },
         data: { status },
       });
+
+      if (status === SubmissionStatus.POSTED) {
+        const existingVerifications = await tx.tbl_submission_verification.count({
+          where: { submission_id },
+        });
+
+        if (existingVerifications === 0) {
+          await tx.tbl_submission_verification.createMany({
+            data: [
+              {
+                submission_id,
+                stage: 1,
+                stage_name: "Verifikasi Unit",
+                verifier_id: "198001012005",
+                status: "PENDING",
+              },
+              {
+                submission_id,
+                stage: 2,
+                stage_name: "Verifikasi Bagian Umum",
+                verifier_id: "staff",
+                status: "PENDING",
+              },
+              {
+                submission_id,
+                stage: 3,
+                stage_name: "Verifikasi Pimpinan",
+                verifier_id: "197903032003",
+                status: "PENDING",
+              },
+            ],
+          });
+
+          await tx.tbl_notification.create({
+            data: {
+              user_id: "198001012005",
+              title: "Tugas Verifikasi Unit (Tahap 1)",
+              message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan verifikasi Anda.`,
+              link: `/submission/${submission.id}`,
+            },
+          });
+        }
+      }
 
       switch (status) {
         case SubmissionStatus.APPROVED:

@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import submissionMiddleware from "./submission.Middleware";
 import submissionController from "./submission.Controller";
+import verificationController from "../verification/verification.Controller";
 
 const SubmissionRoute = Router()
   .put("/status/:id", submissionMiddleware.UpdateStatusMiddleware, submissionController.UpdateStatus)
@@ -10,6 +11,9 @@ const SubmissionRoute = Router()
   .post("/assign-verifiers/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaAssignVerifiersMiddleware, submissionController.AssignVerifiers)
   .put("/verify/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaVerifyMiddleware, submissionController.VerifySubmission)
   .post("/verify/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaVerifyMiddleware, submissionController.VerifySubmission)
+
+  // Tracking Stepper Verifikasi
+  .get("/:id/verification", submissionMiddleware.CheckId, verificationController.GetTracking)
 
   // MAIN CRUD
   .get("/", submissionController.Get)
