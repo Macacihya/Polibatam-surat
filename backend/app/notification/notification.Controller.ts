@@ -27,6 +27,32 @@ class NotificationController {
     }
   }
 
+  async MarkUnread(req: Request, res: Response) {
+    try {
+      const user = req.cookies.user;
+      const { id } = req.params;
+
+      await notificationRepository.MarkAsUnread(id, user.id);
+
+      return Ok({ res, message: "Notifikasi berhasil ditandai belum dibaca." });
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
+
+  async Delete(req: Request, res: Response) {
+    try {
+      const user = req.cookies.user;
+      const { id } = req.params;
+
+      await notificationRepository.Delete(id, user.id);
+
+      return Ok({ res, message: "Notifikasi berhasil dihapus." });
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
+
   async MarkAllRead(req: Request, res: Response) {
     try {
       const user = req.cookies.user;

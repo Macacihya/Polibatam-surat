@@ -5,6 +5,7 @@ import { themeConfig } from '@themeConfig'
 // Components
 import Footer from '@/layouts/components/Footer.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
+import NavBarNotifications from '@/layouts/components/NavBarNotifications.vue'
 import NavBarI18n from '@core/components/I18n.vue'
 import { HorizontalNavLayout } from '@layouts'
 
@@ -67,6 +68,7 @@ watch([
       />
 
       <!-- <NavbarThemeSwitcher class="me-2" /> -->
+      <NavBarNotifications class="me-2" />
       <UserProfile />
     </template>
 

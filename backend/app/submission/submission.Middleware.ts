@@ -155,8 +155,16 @@ class SubmissionMiddleware {
     next: NextFunction
   ) {
     try {
-      if (!req.cookies.user?.is_admin) {
-        throw new Error("Hanya Admin yang dapat menugaskan verifikator.");
+      const user = req.cookies.user;
+      const isAuthorized =
+        user?.is_admin ||
+        user?.staff === "Administrasi" ||
+        user?.unit?.toLowerCase().includes("administrasi");
+
+      if (!isAuthorized) {
+        throw new Error(
+          "Hanya Admin / Urusan Administrasi yang dapat menugaskan verifikator."
+        );
       }
 
       const validate = await AssignVerifiersSchema.parseAsync(req.body);

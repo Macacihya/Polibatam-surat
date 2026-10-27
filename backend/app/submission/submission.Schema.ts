@@ -45,6 +45,12 @@ export const SubmissionPublishSchema = z.object({
 
 export type SubmissionPublishSchema = z.infer<typeof SubmissionPublishSchema>;
 
+export const DEFAULT_VERIFICATION_STAGES = [
+  { stage: 1, name: "Verifikasi Administrasi", role: "Administrasi" },
+  { stage: 2, name: "Verifikasi Wakil Direktur", role: "Wakil Direktur" },
+  { stage: 3, name: "Pengesahan Direktur", role: "Direktur" },
+] as const;
+
 export const AssignVerifiersSchema = z.object({
   verifiers: z
     .array(
@@ -54,7 +60,27 @@ export const AssignVerifiersSchema = z.object({
         verifier_id: z.string().min(1, "Verifier is required"),
       })
     )
-    .min(1, "Minimal 1 verifikator harus dipilih"),
+    .min(1, "Minimal 1 verifikator harus dipilih")
+    .max(3, "Maksimal 3 tahap verifikasi")
+    .refine(
+      (verifiers) => {
+        const stages = verifiers.map((v) => v.stage);
+        return new Set(stages).size === stages.length;
+      },
+      {
+        message: "Tahap verifikasi tidak boleh duplikat.",
+      }
+    )
+    .refine(
+      (verifiers) => {
+        const stages = verifiers.map((v) => v.stage).sort((a, b) => a - b);
+        return stages.every((st, idx) => st === idx + 1);
+      },
+      {
+        message:
+          "Tahap verifikasi harus berurutan dimulai dari Tahap 1 (Administrasi).",
+      }
+    ),
 });
 
 export type AssignVerifiersSchema = z.infer<typeof AssignVerifiersSchema>;
