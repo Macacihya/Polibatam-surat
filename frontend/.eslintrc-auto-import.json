@@ -366,6 +366,7 @@
     "VERIFICATION_STEP_STATE": true,
     "IS_VERIFICATION_MOCK": true,
     "getVerifierStages": true,
-    "isVerifier": true
+    "isVerifier": true,
+    "getCurrentUser": true
   }
 }

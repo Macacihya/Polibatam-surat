@@ -57,5 +57,29 @@ const statuses = [
   },
 ]
 
-const findStatus = () => statuses.find(status => status.type === props.status)
+const findStatus = () => {
+  if (!props.status)
+    return { icon: 'tabler-file-text', type: '', display: '-', color: 'secondary' }
+
+  const found = statuses.find(status => status.type === props.status)
+  if (found)
+    return found
+
+  const match = String(props.status).match(/^TAHAP_(\d+)_DISETUJUI$/i)
+  if (match) {
+    return {
+      icon: 'tabler-check',
+      type: props.status,
+      display: `Tahap ${match[1]} Disetujui`,
+      color: 'success',
+    }
+  }
+
+  return {
+    icon: 'tabler-info-circle',
+    type: props.status,
+    display: String(props.status).replace(/_/g, ' '),
+    color: 'primary',
+  }
+}
 </script>

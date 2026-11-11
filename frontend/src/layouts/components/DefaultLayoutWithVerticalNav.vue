@@ -67,7 +67,10 @@ watch([
         @fallback="isFallbackStateActive = true"
         @resolve="isFallbackStateActive = false"
       >
-        <Component :is="Component" />
+        <Component
+          :is="Component"
+          :key="$route.path"
+        />
       </Suspense>
     </RouterView>
 

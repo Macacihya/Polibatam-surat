@@ -106,10 +106,22 @@ class SubmissionController {
   async Delete(req: Request, res: Response) {
     try {
       const { id: submission_id } = req.params;
+      const user = req.cookies.user;
+
+      const submission = await submissionRepository.FetchById(submission_id);
+      if (!submission) throw new Error("Pengajuan tidak ditemukan.");
+
+      if (!user?.is_admin && submission.creator_id !== user?.id) {
+        throw new Error("Anda tidak memiliki izin untuk menghapus pengajuan ini.");
+      }
+
+      if (!["DRAFT", "POSTED", "REJECTED"].includes(submission.status) && !user?.is_admin) {
+        throw new Error("Pengajuan yang sudah disetujui atau diterbitkan tidak dapat dihapus.");
+      }
 
       await submissionRepository.Destroy(submission_id);
 
-      return Ok({ res, message: "Submission deleted." });
+      return Ok({ res, message: "Pengajuan berhasil dihapus." });
     } catch (error) {
       return ErrorResponse({ res, error });
     }

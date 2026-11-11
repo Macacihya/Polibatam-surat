@@ -35,6 +35,9 @@ const props = defineProps({
 })
 
 function capitalizeName(name) {
+  if (!name)
+    return '-'
+  
   return name.toLowerCase().split(' ').map(word => {
     return word.charAt(0).toUpperCase() + word.slice(1)
   }).join(' ')
