@@ -179,6 +179,13 @@ const headers = ref([
   { sortable: false, title: "Aksi", key: "actions", align: "end", sortable: false },
 ])
 
+const canModify = item => {
+  const user = getCurrentUser()
+  const isOwner = user && (item.creator_id === user.id || item.creator?.nip === user.nip || item.creator?.id === user.id)
+
+  return isAdmin() || isOwner
+}
+
 const computedMoreList = computed(() => {
   return item => [
     {
@@ -190,13 +197,13 @@ const computedMoreList = computed(() => {
       title: 'Edit',
       prependIcon: 'tabler-pencil',
       to: `/submission/form?submission_id=${item.id}`,
-      hidden: !['DRAFT', 'REJECTED'].includes(item.status),
+      hidden: !['DRAFT', 'REJECTED'].includes(item.status) || !canModify(item),
     },
     {
       title: 'Posting Pengajuan',
       prependIcon: 'tabler-upload',
       onClick: () => handleUpdateStatus(item.id, 'POSTED'),
-      hidden: item.status !== 'DRAFT',
+      hidden: item.status !== 'DRAFT' || !canModify(item),
     },
     // Tombol 'Setujui Pengajuan' legacy dinonaktifkan agar tidak mem-bypass alur verifikasi 3 tahap.
     // Pengguna diarahkan ke menu Verifikasi untuk memproses tahapan verifikasi secara berurutan.
@@ -219,10 +226,10 @@ const computedMoreList = computed(() => {
       hidden: ['PUBLISHED', 'REJECTED'].includes(item.status) || !isAdmin(),
     },
     {
-      title: 'Delete Document',
+      title: 'Hapus Dokumen',
       prependIcon: 'tabler-trash',
       onClick: () => handleDelete(item.id),
-      hidden: item.status !== 'DRAFT' || !isAdmin(),
+      hidden: ['APPROVED', 'PUBLISHED'].includes(item.status) || !canModify(item),
     },
   ].filter(item => {
     if(item.hidden) return !item.hidden

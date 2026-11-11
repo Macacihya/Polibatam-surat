@@ -1,9 +1,21 @@
 import moment from 'moment'
 
-export const isAdmin = () => {
-  const user = JSON.parse(localStorage.getItem('App-User'))
+export const getCurrentUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('App-User'))
+  } catch (error) {
+    return null
+  }
+}
 
-  return user.is_admin
+export const isAdmin = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('App-User'))
+
+    return !!user?.is_admin
+  } catch (error) {
+    return false
+  }
 }
 
 export const formatCalendar = date => {

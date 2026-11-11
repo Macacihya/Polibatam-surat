@@ -42,7 +42,7 @@
           <VCardText class="d-flex justify-space-between items-center">
             <div>
               <VCardTitle>
-                <strong :class="`text-${getStatus(submission?.status)?.color}`">[{{ submission?.status }}]</strong> Pengajuan SK | {{ submission?.title }}
+                <strong :class="`text-${getStatus(submission?.status)?.color}`">[{{ submission?.status || '-' }}]</strong> Pengajuan SK | {{ submission?.title || '-' }}
               </VCardTitle>
               <VCardSubtitle>
                 Pengajuan Surat Keputusan pada Politeknik Negeri Batam
@@ -203,7 +203,7 @@
                     { title: 'Staff', key: 'user.staff' },
                     { title: 'Unit', key: 'user.unit' },
                   ]"
-                  :items="submission.users"
+                  :items="submission?.users || []"
                   :search="search_user"
                   :items-per-page="5"
                   class="text-no-wrap"
@@ -224,7 +224,7 @@
                   :headers="[
                     { title: 'Unit', key: 'unit_name' },
                   ]"
-                  :items="submission.units"
+                  :items="submission?.units || []"
                   :search="search_unit"
                   :items-per-page="5"
                   class="text-no-wrap"
@@ -246,7 +246,7 @@
                     { title: 'Name', key: 'group.name' },
                     { title: 'Created At', key: 'group.created_at' , value: (v) => formatCalendar(v.group.created_at) },
                   ]"
-                  :items="submission.groups"
+                  :items="submission?.groups || []"
                   :search="search_group"
                   :items-per-page="5"
                   class="text-no-wrap"
@@ -276,15 +276,15 @@
             density="compact"
           >
             <VTimelineItem
-              v-for="log in submission.logs"
+              v-for="log in (submission?.logs || [])"
               :key="log.id"
-              :dot-color="getStatus(log.status).color"
+              :dot-color="getStatus(log.status)?.color || 'primary'"
               size="x-small"
             >
               <!-- 👉 Header -->
               <div class="d-flex justify-space-between align-center gap-2 flex-wrap mb-2">
                 <span class="app-timeline-title">
-                  {{ getStatus(log.status).display }}
+                  {{ getStatus(log.status)?.display || log.status }}
                 </span>
                 <span class="app-timeline-meta">
                   {{ formatCalendar(log.created_at) }}
@@ -309,7 +309,7 @@
 const store = useVuex()
 const route = useRoute()
 const router = useRouter()
-const submission_id = ref(route.params.id)
+const submission_id = computed(() => route.params.id)
 const currentTab = ref('tab-1')
 
 const search_user = ref('')
@@ -355,16 +355,54 @@ const statuses = [
   },
 ]
 
-const getStatus = type => statuses.find(status => status.type === type)
+const getStatus = type => {
+  if (!type)
+    return { icon: 'tabler-file-text', type: '', display: '-', color: 'secondary' }
+
+  const found = statuses.find(status => status.type === type)
+  if (found)
+    return found
+
+  const match = String(type).match(/^TAHAP_(\d+)_DISETUJUI$/i)
+  if (match) {
+    return {
+      icon: 'tabler-check',
+      type,
+      display: `Tahap ${match[1]} Disetujui`,
+      color: 'success',
+    }
+  }
+
+  return {
+    icon: 'tabler-info-circle',
+    type,
+    display: String(type).replace(/_/g, ' '),
+    color: 'primary',
+  }
+}
 
 const submission = computed(() => store.state.submission.report)
 const loading = computed(() => store.state.submission.loading.report)
 const tracking = computed(() => store.state.verification.tracking)
 const tracking_loading = computed(() => store.state.verification.loading.tracking)
 
+const fetchSubmission = id => {
+  if (id) {
+    store.dispatch('submission/GetReport', id)
+    store.dispatch('verification/GetTracking', id)
+  }
+}
+
+watch(submission_id, id => {
+  fetchSubmission(id)
+})
+
 onMounted(() => {
-  store.dispatch('submission/GetReport', submission_id.value)
-  store.dispatch('verification/GetTracking', submission_id.value)
+  fetchSubmission(submission_id.value)
+})
+
+onBeforeUnmount(() => {
+  store.commit('submission/SET_REPORT', '')
 })
 </script>
 

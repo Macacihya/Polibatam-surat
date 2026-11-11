@@ -137,14 +137,26 @@ class VerificationRepository {
       const v = submission.verifications.find((x) => x.stage === sc.stage);
       let state = "PENDING";
 
-      if (submission.status === SubmissionStatus.REJECTED && submission.current_stage === sc.stage) {
+      if (v?.status === "APPROVED") {
+        state = "DONE";
+      } else if (v?.status === "REJECTED") {
         state = "REJECTED";
       } else if (
-        sc.stage < submission.current_stage ||
-        (submission.status === SubmissionStatus.APPROVED && sc.stage <= submission.total_stages)
+        submission.status === SubmissionStatus.REJECTED &&
+        submission.current_stage === sc.stage
+      ) {
+        state = "REJECTED";
+      } else if (
+        ["APPROVED", "PUBLISHED"].includes(submission.status) &&
+        sc.stage <= (submission.total_stages || 3)
       ) {
         state = "DONE";
-      } else if (sc.stage === submission.current_stage && submission.status === SubmissionStatus.POSTED) {
+      } else if (sc.stage < submission.current_stage) {
+        state = "DONE";
+      } else if (
+        sc.stage === submission.current_stage &&
+        submission.status === SubmissionStatus.POSTED
+      ) {
         state = "CURRENT";
       }
 
