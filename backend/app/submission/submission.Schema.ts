@@ -14,6 +14,9 @@ export const SubmissionSchema = z.object({
   filepath: z.string().optional(),
   pickup_plan: z.coerce.date().optional(),
 
+  template_id: z.string().optional(),
+  template_values: z.any().optional(),
+
   list_consider: z.array(z.string()).default([]),
   list_observe: z.array(z.string()).default([]),
   list_decide: z.array(z.string()).default([]),

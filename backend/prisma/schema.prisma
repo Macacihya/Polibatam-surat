@@ -72,6 +72,7 @@ model tbm_user {
   verifications          tbl_submission_verification[]
   notifications          tbl_notification[]
   units                  tbm_unit[]
+  verification_stage_verifiers tbm_verification_stage_verifier[]
 }
 
 model tbm_unit {
@@ -190,6 +191,10 @@ model tbl_submission {
   filepath    String?   @default("")
   pickup_plan DateTime? @db.Date
 
+  template_id     String?
+  template        tbm_template? @relation(fields: [template_id], references: [id])
+  template_values Json?
+
   list_consider Json?
   list_observe  Json?
   list_decide   Json?
@@ -295,5 +300,44 @@ model tbl_notification {
   is_read    Boolean  @default(false)
 
   created_at DateTime @default(now())
+}
+
+model tbm_verification_stage {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  is_by_unit  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  verifiers   tbm_verification_stage_verifier[]
+}
+
+model tbm_verification_stage_verifier {
+  id         String   @id @default(cuid())
+  stage_id   Int
+  user_id    String
+  created_at DateTime @default(now())
+
+  stage      tbm_verification_stage @relation(fields: [stage_id], references: [id], onDelete: Cascade)
+  user       tbm_user               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([stage_id, user_id])
+}
+
+model tbm_template {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  title         String
+  type          String   // "SK Non-Honor", "SK Honor", "Perdir", "Surat Tugas"
+  description   String?
+  filepath      String   // Path ke file template .docx
+  schema_fields Json     // Array field definisi variabel form
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  is_deleted    Boolean  @default(false)
+
+  submissions   tbl_submission[]
 }
 

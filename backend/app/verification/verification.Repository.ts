@@ -3,35 +3,153 @@ import { SubmissionStatus } from "../submission/submission.Schema";
 
 class VerificationRepository {
   async GetStages() {
-    const verifiers = await prisma.tbm_user.findMany({
+    let stages = await prisma.tbm_verification_stage.findMany({
+      orderBy: { id: "asc" },
+      include: {
+        verifiers: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (stages.length === 0) {
+      // Seed default 3 stages
+      await prisma.tbm_verification_stage.createMany({
+        data: [
+          {
+            id: 1,
+            name: "Verifikasi Unit",
+            is_by_unit: true,
+            description: "Verifikasi oleh Pimpinan Unit/Kajur pengusul",
+          },
+          {
+            id: 2,
+            name: "Verifikasi Bagian Umum",
+            is_by_unit: false,
+            description: "Verifikasi administrasi bagian umum & keuangan",
+          },
+          {
+            id: 3,
+            name: "Verifikasi Pimpinan",
+            is_by_unit: false,
+            description: "Pengesahan akhir oleh Wadir / Direktur",
+          },
+        ],
+      });
+
+      // Hubungkan verifikator default jika ada akun dummy/seed
+      const defaultUsers = await prisma.tbm_user.findMany({
+        where: {
+          nip: { in: ["198001012005", "staff", "197903032003"] },
+          is_deleted: false,
+        },
+      });
+
+      for (const u of defaultUsers) {
+        const stageId =
+          u.nip === "198001012005" ? 1 : u.nip === "staff" ? 2 : 3;
+        await prisma.tbm_verification_stage_verifier
+          .create({
+            data: {
+              stage_id: stageId,
+              user_id: u.id,
+            },
+          })
+          .catch(() => {});
+      }
+
+      stages = await prisma.tbm_verification_stage.findMany({
+        orderBy: { id: "asc" },
+        include: {
+          verifiers: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+    }
+
+    return stages.map((s) => ({
+      stage: s.id,
+      name: s.name,
+      description: s.description,
+      is_by_unit: s.is_by_unit,
+      verifiers: s.verifiers
+        .map((v) => v.user)
+        .filter((u) => u && !u.is_deleted),
+    }));
+  }
+
+  async AddVerifier({ stage, nip }: { stage: number; nip: string }) {
+    const user = await prisma.tbm_user.findFirst({
       where: {
-        nip: { in: ["198001012005", "staff", "197903032003"] },
+        OR: [{ nip: String(nip) }, { id: String(nip) }],
         is_deleted: false,
       },
     });
 
-    const vMap: Record<string, any> = {};
-    for (const v of verifiers) {
-      vMap[v.nip] = v;
+    if (!user) {
+      throw new Error(`Pegawai dengan NIP ${nip} tidak ditemukan.`);
     }
 
-    return [
-      {
-        stage: 1,
-        name: "Verifikasi Unit",
-        verifiers: vMap["198001012005"] ? [vMap["198001012005"]] : [],
+    const stageRecord = await prisma.tbm_verification_stage.findUnique({
+      where: { id: Number(stage) },
+    });
+
+    if (!stageRecord) {
+      throw new Error(`Tahap verifikasi ${stage} tidak valid.`);
+    }
+
+    const existing = await prisma.tbm_verification_stage_verifier.findUnique({
+      where: {
+        stage_id_user_id: {
+          stage_id: Number(stage),
+          user_id: user.id,
+        },
       },
-      {
-        stage: 2,
-        name: "Verifikasi Bagian Umum",
-        verifiers: vMap["staff"] ? [vMap["staff"]] : [],
+    });
+
+    if (existing) {
+      throw new Error(`${user.nama} sudah terdaftar pada Tahap ${stage}.`);
+    }
+
+    await prisma.tbm_verification_stage_verifier.create({
+      data: {
+        stage_id: Number(stage),
+        user_id: user.id,
       },
-      {
-        stage: 3,
-        name: "Verifikasi Pimpinan",
-        verifiers: vMap["197903032003"] ? [vMap["197903032003"]] : [],
+    });
+
+    return {
+      message: `${user.nama} berhasil ditambahkan sebagai Verifikator Tahap ${stage}.`,
+      user,
+    };
+  }
+
+  async RemoveVerifier({ stage, nip }: { stage: number; nip: string }) {
+    const user = await prisma.tbm_user.findFirst({
+      where: {
+        OR: [{ nip: String(nip) }, { id: String(nip) }],
       },
-    ];
+    });
+
+    if (!user) {
+      throw new Error(`Pegawai dengan NIP ${nip} tidak ditemukan.`);
+    }
+
+    await prisma.tbm_verification_stage_verifier.deleteMany({
+      where: {
+        stage_id: Number(stage),
+        user_id: user.id,
+      },
+    });
+
+    return {
+      message: `${user.nama} berhasil dihapus dari daftar Verifikator Tahap ${stage}.`,
+    };
   }
 
   async GetApprovals({
