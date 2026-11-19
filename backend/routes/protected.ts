@@ -9,6 +9,7 @@ import { UnitRoute } from "../app/unit/unit.Route";
 import { RegulationRoute } from "../app/regulation/regulation.Route";
 import NotificationRoute from "../app/notification/notification.Route";
 import VerificationRoute from "../app/verification/verification.Route";
+import TemplateRoute from "../app/template/template.Route";
 
 const protectedRoutes = Router()
   .use("/dashboard", DashboardRoute)
@@ -19,6 +20,7 @@ const protectedRoutes = Router()
   .use("/user", UserRoute)
   .use("/notification", NotificationRoute)
   .use("/regulation", RegulationRoute)
-  .use("/verification", VerificationRoute);
+  .use("/verification", VerificationRoute)
+  .use("/templates", TemplateRoute);
 
 export { protectedRoutes };

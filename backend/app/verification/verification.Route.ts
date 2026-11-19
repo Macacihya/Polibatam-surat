@@ -3,6 +3,8 @@ import verificationController from "./verification.Controller";
 
 const VerificationRoute = Router()
   .get("/stages", verificationController.GetStages)
+  .post("/stages/:stage/verifiers", verificationController.AddVerifier)
+  .delete("/stages/:stage/verifiers/:nip", verificationController.RemoveVerifier)
   .get("/approvals", verificationController.GetApprovals)
   .put("/approvals/:id/approve", verificationController.Approve)
   .put("/approvals/:id/reject", verificationController.Reject);

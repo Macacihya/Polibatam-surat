@@ -196,6 +196,7 @@ class SubmissionRepository {
             verifier: true,
           },
         },
+        template: true,
         creator: true,
         modifier: true,
       },
@@ -466,27 +467,83 @@ class SubmissionRepository {
         });
 
         if (existingVerifications === 0) {
+          // Cari unit pengusul untuk verifikator Tahap 1 dinamis
+          const creator = submission.creator_id
+            ? await tx.tbm_user.findUnique({ where: { id: submission.creator_id } })
+            : null;
+
+          let stage1VerifierId: string | null = null;
+          if (creator?.unit) {
+            const unit = await tx.tbm_unit.findFirst({
+              where: { name: creator.unit, is_deleted: false },
+              include: { leader: true },
+            });
+            if (unit?.leader_id) {
+              stage1VerifierId = unit.leader_id;
+            }
+          }
+
+          // Ambil konfigurasi master stage & verifikator dari database
+          const stages = await tx.tbm_verification_stage.findMany({
+            orderBy: { id: "asc" },
+            include: {
+              verifiers: {
+                include: { user: true },
+              },
+            },
+          });
+
+          const stage1Config = stages.find((s) => s.id === 1);
+          const stage2Config = stages.find((s) => s.id === 2);
+          const stage3Config = stages.find((s) => s.id === 3);
+
+          if (!stage1VerifierId && stage1Config?.verifiers.length) {
+            stage1VerifierId = stage1Config.verifiers[0].user_id;
+          }
+          if (!stage1VerifierId) {
+            const defaultUser = await tx.tbm_user.findFirst({
+              where: { OR: [{ nip: "198001012005" }, { is_admin: true }] },
+            });
+            stage1VerifierId = defaultUser?.id || "198001012005";
+          }
+
+          let stage2VerifierId = stage2Config?.verifiers[0]?.user_id;
+          if (!stage2VerifierId) {
+            const defaultStaff = await tx.tbm_user.findFirst({
+              where: { nip: "staff" },
+            });
+            stage2VerifierId = defaultStaff?.id || "staff";
+          }
+
+          let stage3VerifierId = stage3Config?.verifiers[0]?.user_id;
+          if (!stage3VerifierId) {
+            const defaultWadir = await tx.tbm_user.findFirst({
+              where: { nip: "197903032003" },
+            });
+            stage3VerifierId = defaultWadir?.id || "197903032003";
+          }
+
           await tx.tbl_submission_verification.createMany({
             data: [
               {
                 submission_id,
                 stage: 1,
-                stage_name: "Verifikasi Unit",
-                verifier_id: "198001012005",
+                stage_name: stage1Config?.name || "Verifikasi Unit",
+                verifier_id: stage1VerifierId,
                 status: "PENDING",
               },
               {
                 submission_id,
                 stage: 2,
-                stage_name: "Verifikasi Bagian Umum",
-                verifier_id: "staff",
+                stage_name: stage2Config?.name || "Verifikasi Bagian Umum",
+                verifier_id: stage2VerifierId,
                 status: "PENDING",
               },
               {
                 submission_id,
                 stage: 3,
-                stage_name: "Verifikasi Pimpinan",
-                verifier_id: "197903032003",
+                stage_name: stage3Config?.name || "Verifikasi Pimpinan",
+                verifier_id: stage3VerifierId,
                 status: "PENDING",
               },
             ],
@@ -494,7 +551,7 @@ class SubmissionRepository {
 
           await tx.tbl_notification.create({
             data: {
-              user_id: "198001012005",
+              user_id: stage1VerifierId,
               title: "Tugas Verifikasi Unit (Tahap 1)",
               message: `Pengajuan SK "${submission.title}" menunggu peninjauan dan verifikasi Anda.`,
               link: `/submission/${submission.id}`,
@@ -680,7 +737,13 @@ class SubmissionRepository {
         );
       }
 
-      if (currentVerification.verifier_id !== user.id && !user.is_admin) {
+      const isAuthorized =
+        currentVerification.verifier_id === user.id ||
+        currentVerification.verifier?.nip === user.nip ||
+        currentVerification.verifier_id === user.nip ||
+        user.is_admin;
+
+      if (!isAuthorized) {
         throw new Error(
           "Anda tidak memiliki hak akses untuk memverifikasi tahap ini."
         );
