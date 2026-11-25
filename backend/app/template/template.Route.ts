@@ -4,8 +4,7 @@ import { UploadDocument } from "../../utils/multer";
 
 const TemplateRoute = Router()
   .get("/", templateController.Get)
-  .get("/:id/download", templateController.DownloadFile)
-  .get("/:id/content", templateController.GetContent)
+
   .get("/:id", templateController.GetById)
   .post("/", UploadDocument.single("file"), templateController.Create)
   .put("/:id", UploadDocument.single("file"), templateController.Edit)

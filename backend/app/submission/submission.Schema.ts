@@ -16,8 +16,7 @@ export const SubmissionSchema = z.object({
 
   template_id: z.string().optional(),
   template_values: z.any().optional(),
-  document_source: z.enum(["TEMPLATE", "UPLOAD", "BLANK"]).optional().default("TEMPLATE"),
-  editor_content: z.string().optional(),
+
 
   list_consider: z.array(z.string()).default([]),
   list_observe: z.array(z.string()).default([]),
