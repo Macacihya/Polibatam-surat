@@ -16,6 +16,8 @@ export const SubmissionSchema = z.object({
 
   template_id: z.string().optional(),
   template_values: z.any().optional(),
+  document_source: z.enum(["TEMPLATE", "UPLOAD", "BLANK"]).optional().default("TEMPLATE"),
+  editor_content: z.string().optional(),
 
   list_consider: z.array(z.string()).default([]),
   list_observe: z.array(z.string()).default([]),
@@ -105,3 +107,12 @@ export const VerifySubmissionSchema = z.object({
 );
 
 export type VerifySubmissionSchema = z.infer<typeof VerifySubmissionSchema>;
+
+export const DraftDocumentSchema = z.object({
+  html: z.string().min(1, "Konten dokumen tidak boleh kosong."),
+  template_id: z.string().optional(),
+  base_filepath: z.string().optional(),
+  existing_filepath: z.string().optional(),
+});
+
+export type DraftDocumentSchema = z.infer<typeof DraftDocumentSchema>;

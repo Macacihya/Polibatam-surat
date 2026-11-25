@@ -310,6 +310,10 @@ class SubmissionRepository {
     return await prisma.$transaction(async (tx) => {
       const { groups, users, units, ...payload } = data;
 
+      const existingSubmission = await tx.tbl_submission.findUnique({
+        where: { id: submission_id },
+      });
+
       const submission = await tx.tbl_submission.update({
         where: { id: submission_id },
         data: {
@@ -318,7 +322,10 @@ class SubmissionRepository {
         },
       });
 
-      if (submission.status == SubmissionStatus.REJECTED && payload.status == SubmissionStatus.POSTED) {
+      if (
+        existingSubmission?.status == SubmissionStatus.REJECTED &&
+        payload.status == SubmissionStatus.POSTED
+      ) {
         // Reset verifications to PENDING and restart at stage 1
         await tx.tbl_submission_verification.updateMany({
           where: { submission_id },
@@ -349,7 +356,7 @@ class SubmissionRepository {
             },
           });
         }
-      } else if (submission.status == SubmissionStatus.REJECTED) {
+      } else if (existingSubmission?.status == SubmissionStatus.REJECTED) {
         await tx.tbl_submission.update({
           where: { id: submission.id },
           data: { status: SubmissionStatus.DRAFT },
@@ -562,33 +569,35 @@ class SubmissionRepository {
 
       switch (status) {
         case SubmissionStatus.APPROVED:
-          const list_consider = this.createDocumentList({
-            items: submission.list_consider,
-            type: "Alphabet",
-          });
-          const list_observe = this.createDocumentList({
-            items: submission.list_observe,
-            type: "Numeric",
-          });
-          const list_decide = this.createDocumentList({
-            items: submission.list_decide,
-            type: "NumAlphabet",
-          });
+          if (!submission.filepath) {
+            const list_consider = this.createDocumentList({
+              items: submission.list_consider,
+              type: "Alphabet",
+            });
+            const list_observe = this.createDocumentList({
+              items: submission.list_observe,
+              type: "Numeric",
+            });
+            const list_decide = this.createDocumentList({
+              items: submission.list_decide,
+              type: "NumAlphabet",
+            });
 
-          const filepath = await DocxTemplateService.submissionApproved({
-            title: submission.title.toUpperCase(),
-            list_consider: list_consider,
-            list_observe: list_observe,
-            list_decide: list_decide,
-            date: moment(submission.pickup_plan).format("DD MMMM YYYY"),
-          });
+            const filepath = await DocxTemplateService.submissionApproved({
+              title: submission.title.toUpperCase(),
+              list_consider: list_consider,
+              list_observe: list_observe,
+              list_decide: list_decide,
+              date: moment(submission.pickup_plan).format("DD MMMM YYYY"),
+            });
 
-          if (!filepath) throw new Error("Gagal membuat surat keputusan");
+            if (!filepath) throw new Error("Gagal membuat surat keputusan");
 
-          await tx.tbl_submission.update({
-            where: { id: submission_id },
-            data: { filepath },
-          });
+            await tx.tbl_submission.update({
+              where: { id: submission_id },
+              data: { filepath },
+            });
+          }
 
           break;
       }
@@ -843,35 +852,38 @@ class SubmissionRepository {
         return updated;
       }
 
-      // FINAL APPROVAL: generate docx template
-      const list_consider = this.createDocumentList({
-        items: submission.list_consider,
-        type: "Alphabet",
-      });
-      const list_observe = this.createDocumentList({
-        items: submission.list_observe,
-        type: "Numeric",
-      });
-      const list_decide = this.createDocumentList({
-        items: submission.list_decide,
-        type: "NumAlphabet",
-      });
+      // FINAL APPROVAL: preserve existing Word document edited by proposer, or generate from legacy template
+      let finalFilepath = submission.filepath;
+      if (!finalFilepath) {
+        const list_consider = this.createDocumentList({
+          items: submission.list_consider,
+          type: "Alphabet",
+        });
+        const list_observe = this.createDocumentList({
+          items: submission.list_observe,
+          type: "Numeric",
+        });
+        const list_decide = this.createDocumentList({
+          items: submission.list_decide,
+          type: "NumAlphabet",
+        });
 
-      const filepath = await DocxTemplateService.submissionApproved({
-        title: submission.title.toUpperCase(),
-        list_consider,
-        list_observe,
-        list_decide,
-        date: moment(submission.pickup_plan).format("DD MMMM YYYY"),
-      });
+        finalFilepath = await DocxTemplateService.submissionApproved({
+          title: submission.title.toUpperCase(),
+          list_consider,
+          list_observe,
+          list_decide,
+          date: moment(submission.pickup_plan).format("DD MMMM YYYY"),
+        });
 
-      if (!filepath) throw new Error("Gagal membuat borang surat keputusan");
+        if (!finalFilepath) throw new Error("Gagal membuat borang surat keputusan");
+      }
 
       const updated = await tx.tbl_submission.update({
         where: { id: submission_id },
         data: {
           status: SubmissionStatus.APPROVED,
-          filepath,
+          filepath: finalFilepath,
         },
       });
 

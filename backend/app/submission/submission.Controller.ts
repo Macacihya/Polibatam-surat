@@ -1,6 +1,32 @@
+import fs from "fs";
+import path from "path";
 import { Request, Response } from "express";
 import { ErrorResponse, Ok } from "../../utils/api-response";
+import {
+  docxToHtml,
+  htmlToDocx,
+  normalizeStoredFilepath,
+  resolvePublicDocxPath,
+} from "../../utils/docx-editor";
+import templateRepository from "../template/template.Repository";
+import { DraftDocumentSchema } from "./submission.Schema";
 import submissionRepository from "./submission.Repository";
+
+async function resolveBaseDocxPath(
+  baseFilepath?: string,
+  templateId?: string
+): Promise<string | undefined> {
+  if (baseFilepath) {
+    const candidate = resolvePublicDocxPath(baseFilepath);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  if (templateId) {
+    const tpl = await templateRepository.FetchById(templateId);
+    const tplPath = resolvePublicDocxPath(tpl.filepath);
+    if (fs.existsSync(tplPath)) return tplPath;
+  }
+  return undefined;
+}
 
 class SubmissionController {
   async Get(req: Request, res: Response) {
@@ -43,6 +69,17 @@ class SubmissionController {
 
   async Create(req: Request, res: Response) {
     try {
+      if (req.body.editor_content && !req.body.filepath) {
+        const baseDocxPath = await resolveBaseDocxPath(
+          undefined,
+          req.body.template_id
+        );
+        req.body.filepath = htmlToDocx({
+          html: req.body.editor_content,
+          baseDocxPath,
+        });
+      }
+
       const submission = await submissionRepository.Store({
         data: req.body,
         creator: req.cookies.user,
@@ -57,6 +94,23 @@ class SubmissionController {
   async Edit(req: Request, res: Response) {
     try {
       const { id: submission_id } = req.params;
+
+      if (req.body.editor_content) {
+        const existingNorm = normalizeStoredFilepath(req.body.filepath);
+        const reuseName =
+          existingNorm && path.basename(existingNorm).startsWith("draft-")
+            ? path.basename(existingNorm)
+            : undefined;
+        const baseDocxPath = await resolveBaseDocxPath(
+          existingNorm,
+          req.body.template_id
+        );
+        req.body.filepath = htmlToDocx({
+          html: req.body.editor_content,
+          baseDocxPath,
+          outputFileName: reuseName,
+        });
+      }
 
       const submission = await submissionRepository.Update({
         submission_id,
@@ -167,6 +221,101 @@ class SubmissionController {
           action === "APPROVE"
             ? "Persetujuan verifikasi berhasil disimpan."
             : "Penolakan verifikasi berhasil disimpan.",
+      });
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
+
+  async SaveDraftDocument(req: Request, res: Response) {
+    try {
+      if (req.file) {
+        const ext = path.extname(req.file.originalname).toLowerCase();
+        if (ext !== ".docx") {
+          if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          throw new Error("Hanya berkas berformat .docx yang didukung.");
+        }
+
+        const html = docxToHtml(req.file.path);
+        return Ok({
+          res,
+          data: {
+            filepath: req.file.filename,
+            html,
+            document_source: "UPLOAD",
+          },
+          message: "Dokumen Word berhasil dimuat ke editor.",
+        });
+      }
+
+      const parsed = DraftDocumentSchema.parse(req.body);
+      const baseDocxPath = await resolveBaseDocxPath(
+        parsed.base_filepath || parsed.existing_filepath,
+        parsed.template_id
+      );
+
+      const existingNorm = normalizeStoredFilepath(parsed.existing_filepath);
+      const outputFileName =
+        existingNorm && path.basename(existingNorm).startsWith("draft-")
+          ? path.basename(existingNorm)
+          : undefined;
+
+      const fileName = htmlToDocx({
+        html: parsed.html,
+        baseDocxPath,
+        outputFileName,
+      });
+
+      return Ok({
+        res,
+        data: {
+          filepath: fileName,
+          html: parsed.html,
+        },
+        message: "Draf dokumen Word berhasil disimpan.",
+      });
+    } catch (error) {
+      return ErrorResponse({ res, error });
+    }
+  }
+
+  async GetDocumentContent(req: Request, res: Response) {
+    try {
+      const { id: submission_id } = req.params;
+      const submission = await submissionRepository.FetchById(submission_id);
+
+      if (!submission) {
+        throw new Error("Pengajuan tidak ditemukan.");
+      }
+
+      let html = submission.editor_content || "";
+      if (!html && submission.filepath) {
+        const docPath = resolvePublicDocxPath(submission.filepath);
+        if (fs.existsSync(docPath)) {
+          html = docxToHtml(docPath);
+        }
+      }
+
+      if (!html && submission.template?.filepath) {
+        const tplPath = resolvePublicDocxPath(submission.template.filepath);
+        if (fs.existsSync(tplPath)) {
+          html = docxToHtml(tplPath, {
+            title: submission.title?.toUpperCase() || "",
+          });
+        }
+      }
+
+      return Ok({
+        res,
+        data: {
+          id: submission.id,
+          title: submission.title,
+          status: submission.status,
+          template_id: submission.template_id,
+          document_source: submission.document_source || "TEMPLATE",
+          filepath: submission.filepath,
+          html: html || "<p></p>",
+        },
       });
     } catch (error) {
       return ErrorResponse({ res, error });

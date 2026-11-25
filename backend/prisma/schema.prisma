@@ -194,6 +194,8 @@ model tbl_submission {
   template_id     String?
   template        tbm_template? @relation(fields: [template_id], references: [id])
   template_values Json?
+  document_source String?       @default("TEMPLATE")
+  editor_content  String?       @db.Text
 
   list_consider Json?
   list_observe  Json?

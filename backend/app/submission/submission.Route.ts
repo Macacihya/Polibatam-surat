@@ -12,7 +12,9 @@ const SubmissionRoute = Router()
   .put("/verify/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaVerifyMiddleware, submissionController.VerifySubmission)
   .post("/verify/:id", submissionMiddleware.CheckId, submissionMiddleware.SchemaVerifyMiddleware, submissionController.VerifySubmission)
 
-  // Tracking Stepper Verifikasi
+  // Draft Word Document (No-Docker Word Editor) & Tracking
+  .post("/draft-document", submissionMiddleware.UploadDraftDocxMiddleware, submissionController.SaveDraftDocument)
+  .get("/:id/document", submissionMiddleware.CheckId, submissionController.GetDocumentContent)
   .get("/:id/verification", submissionMiddleware.CheckId, verificationController.GetTracking)
 
   // MAIN CRUD
