@@ -195,6 +195,7 @@ model tbl_submission {
   template        tbm_template? @relation(fields: [template_id], references: [id])
   template_values Json?
 
+
   list_consider Json?
   list_observe  Json?
   list_decide   Json?

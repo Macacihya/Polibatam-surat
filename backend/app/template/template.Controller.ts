@@ -1,5 +1,4 @@
-import { Request, Response } from "express";
-import { ErrorResponse, Ok } from "../../utils/api-response";
+
 import templateRepository from "./template.Repository";
 
 class TemplateController {
@@ -27,6 +26,7 @@ class TemplateController {
       return ErrorResponse({ res, error });
     }
   }
+
 
   async Create(req: Request, res: Response) {
     try {

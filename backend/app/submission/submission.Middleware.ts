@@ -4,9 +4,11 @@ import {
   AssignVerifiersSchema,
   SubmissionPublishSchema,
   SubmissionSchema,
+  SubmissionStatus,
   VerifySubmissionSchema,
 } from "./submission.Schema";
 import { UploadDocument } from "../../utils/multer";
+import { normalizeStoredFilepath } from "../../utils/docx-editor";
 import submissionRepository from "./submission.Repository";
 import {
   SUBMISSION_STATUS,
@@ -31,15 +33,21 @@ class SubmissionMiddleware {
           [fieldName: string]: Express.Multer.File[];
         };
 
-        if (!files || !files[fieldName]) {
-          if (req.params.id && fieldName != "filepath") {
-            const document = await submissionRepository.FetchById(
-              req.params.id
-            );
-            if (document) req.body[fieldName] = document[fieldName];
+        if (files && files[fieldName] && files[fieldName][0]) {
+          req.body[fieldName] = files[fieldName][0].filename;
+          return;
+        }
+
+        if (typeof req.body[fieldName] === "string" && req.body[fieldName].trim()) {
+          req.body[fieldName] = normalizeStoredFilepath(req.body[fieldName]);
+          return;
+        }
+
+        if (req.params.id) {
+          const document = await submissionRepository.FetchById(req.params.id);
+          if (document && document[fieldName]) {
+            req.body[fieldName] = document[fieldName];
           }
-        } else {
-          req.body[fieldName] = files[fieldName][0]?.filename;
         }
       };
 
@@ -55,6 +63,16 @@ class SubmissionMiddleware {
     });
   }
 
+  async UploadDraftDocxMiddleware(req: Request, res: Response, next: NextFunction) {
+    if (req.is("multipart/form-data")) {
+      return UploadDocument.single("file")(req, res, (err) => {
+        if (err) return ErrorResponse({ res, error: err });
+        next();
+      });
+    }
+    next();
+  }
+
   async SchemaMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
       const validate = await SubmissionSchema.parse(req.body);
@@ -65,6 +83,18 @@ class SubmissionMiddleware {
         validate.units.length == 0
       )
         throw new Error("Users, groups, or units is required.");
+
+      const hasStructuredContent =
+        validate.list_consider.some((item) => item.trim() !== "") ||
+        validate.list_observe.some((item) => item.trim() !== "") ||
+        validate.list_decide.some((item) => item.trim() !== "");
+      const hasWordContent =
+        Boolean(validate.filepath && validate.filepath.trim() !== "") ||
+        Boolean(validate.editor_content && validate.editor_content.replace(/<[^>]*>/g, "").trim() !== "");
+
+      if (validate.status === SubmissionStatus.POSTED && !hasStructuredContent && !hasWordContent) {
+        throw new Error("Dokumen Word atau isi surat wajib diisi sebelum diajukan.");
+      }
 
       req.body = validate;
       next();
